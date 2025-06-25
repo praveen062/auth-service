@@ -1,0 +1,60 @@
+=== RUN   TestAuthHandler_Login_Success
+--- PASS: TestAuthHandler_Login_Success (0.00s)
+=== RUN   TestAuthHandler_Login_InvalidEmail
+--- PASS: TestAuthHandler_Login_InvalidEmail (0.00s)
+=== RUN   TestAuthHandler_Login_MissingFields
+--- PASS: TestAuthHandler_Login_MissingFields (0.00s)
+=== RUN   TestAuthHandler_Register_Success
+--- PASS: TestAuthHandler_Register_Success (0.00s)
+=== RUN   TestAuthHandler_Register_InvalidEmail
+--- PASS: TestAuthHandler_Register_InvalidEmail (0.00s)
+=== RUN   TestAuthHandler_Register_MissingFields
+--- PASS: TestAuthHandler_Register_MissingFields (0.00s)
+=== RUN   TestAuthHandler_RefreshToken_Success
+--- PASS: TestAuthHandler_RefreshToken_Success (0.00s)
+=== RUN   TestAuthHandler_RefreshToken_MissingToken
+--- PASS: TestAuthHandler_RefreshToken_MissingToken (0.00s)
+=== RUN   TestAuthHandler_Logout_Success
+--- PASS: TestAuthHandler_Logout_Success (0.00s)
+=== RUN   TestAuthHandler_Login_InvalidJSON
+--- PASS: TestAuthHandler_Login_InvalidJSON (0.00s)
+=== RUN   TestAuthHandler_Register_EmptyPassword
+--- PASS: TestAuthHandler_Register_EmptyPassword (0.00s)
+=== RUN   TestAuthHandler_NewAuthHandler
+--- PASS: TestAuthHandler_NewAuthHandler (0.00s)
+=== RUN   TestOAuthHandler_GoogleLogin_Success
+--- PASS: TestOAuthHandler_GoogleLogin_Success (0.00s)
+=== RUN   TestOAuthHandler_GoogleLogin_WithCustomRedirectURI
+--- PASS: TestOAuthHandler_GoogleLogin_WithCustomRedirectURI (0.00s)
+=== RUN   TestOAuthHandler_GoogleLogin_MissingTenantID
+--- PASS: TestOAuthHandler_GoogleLogin_MissingTenantID (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_Success
+--- PASS: TestOAuthHandler_GoogleCallback_Success (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_MissingCode
+--- PASS: TestOAuthHandler_GoogleCallback_MissingCode (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_OAuthError
+--- PASS: TestOAuthHandler_GoogleCallback_OAuthError (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_Success
+--- PASS: TestOAuthHandler_ClientCredentials_Success (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_UnsupportedGrantType
+--- PASS: TestOAuthHandler_ClientCredentials_UnsupportedGrantType (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_InvalidJSON
+--- PASS: TestOAuthHandler_ClientCredentials_InvalidJSON (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_Success
+--- PASS: TestOAuthHandler_CreateOneTimeToken_Success (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_MissingURL
+--- PASS: TestOAuthHandler_CreateOneTimeToken_MissingURL (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_Success
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_Success (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_MissingToken
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_MissingToken (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_InvalidToken
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_InvalidToken (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_Success
+--- PASS: TestOAuthHandler_RefreshSession_Success (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_MissingSessionID
+--- PASS: TestOAuthHandler_RefreshSession_MissingSessionID (0.00s)
+=== RUN   TestOAuthHandler_NewOAuthHandler
+--- PASS: TestOAuthHandler_NewOAuthHandler (0.00s)
+PASS
+ok  	auth-service/internal/handler/rest	(cached)

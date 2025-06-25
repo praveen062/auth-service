@@ -1,0 +1,24 @@
+=== RUN   TestLoadConfig_Success
+--- PASS: TestLoadConfig_Success (0.00s)
+=== RUN   TestLoadConfig_FileNotFound
+--- PASS: TestLoadConfig_FileNotFound (0.00s)
+=== RUN   TestLoadConfig_InvalidYAML
+--- PASS: TestLoadConfig_InvalidYAML (0.00s)
+=== RUN   TestLoadConfig_WithEnvironmentVariables
+--- PASS: TestLoadConfig_WithEnvironmentVariables (0.00s)
+=== RUN   TestLoadConfig_DefaultValues
+--- PASS: TestLoadConfig_DefaultValues (0.00s)
+=== RUN   TestDatabaseConfig_GetDSN
+--- PASS: TestDatabaseConfig_GetDSN (0.00s)
+=== RUN   TestDatabaseConfig_GetDSN_WithSSL
+--- PASS: TestDatabaseConfig_GetDSN_WithSSL (0.00s)
+=== RUN   TestRedisConfig_GetRedisAddr
+--- PASS: TestRedisConfig_GetRedisAddr (0.00s)
+=== RUN   TestRedisConfig_GetRedisAddr_CustomHost
+--- PASS: TestRedisConfig_GetRedisAddr_CustomHost (0.00s)
+=== RUN   TestConfig_Validation
+--- PASS: TestConfig_Validation (0.00s)
+=== RUN   TestConfig_CompleteConfiguration
+--- PASS: TestConfig_CompleteConfiguration (0.00s)
+PASS
+ok  	auth-service/internal/config	(cached)

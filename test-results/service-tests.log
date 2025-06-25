@@ -1,0 +1,61 @@
+=== RUN   TestRBACService_AssignRoleToUser_Success
+    rbac_service_test.go:65: PASS:	AssignRoleToUser(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_AssignRoleToUser_Success (0.00s)
+=== RUN   TestRBACService_AssignRoleToUser_Error
+    rbac_service_test.go:81: PASS:	AssignRoleToUser(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_AssignRoleToUser_Error (0.00s)
+=== RUN   TestRBACService_AssignRoleToService_Success
+    rbac_service_test.go:97: PASS:	AssignRoleToService(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_AssignRoleToService_Success (0.00s)
+=== RUN   TestRBACService_AssignRoleToService_Error
+    rbac_service_test.go:113: PASS:	AssignRoleToService(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_AssignRoleToService_Error (0.00s)
+=== RUN   TestRBACService_AssignPermissionToRole_Success
+    rbac_service_test.go:129: PASS:	AssignPermissionToRole(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_AssignPermissionToRole_Success (0.00s)
+=== RUN   TestRBACService_AssignPermissionToRole_Error
+    rbac_service_test.go:145: PASS:	AssignPermissionToRole(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_AssignPermissionToRole_Error (0.00s)
+=== RUN   TestRBACService_UserHasPermission_Success
+    rbac_service_test.go:162: PASS:	UserHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_UserHasPermission_Success (0.00s)
+=== RUN   TestRBACService_UserHasPermission_NoPermission
+    rbac_service_test.go:179: PASS:	UserHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_UserHasPermission_NoPermission (0.00s)
+=== RUN   TestRBACService_UserHasPermission_Error
+    rbac_service_test.go:196: PASS:	UserHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_UserHasPermission_Error (0.00s)
+=== RUN   TestRBACService_ServiceHasPermission_Success
+    rbac_service_test.go:213: PASS:	ServiceHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_ServiceHasPermission_Success (0.00s)
+=== RUN   TestRBACService_ServiceHasPermission_NoPermission
+    rbac_service_test.go:230: PASS:	ServiceHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_ServiceHasPermission_NoPermission (0.00s)
+=== RUN   TestRBACService_ServiceHasPermission_Error
+    rbac_service_test.go:247: PASS:	ServiceHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_ServiceHasPermission_Error (0.00s)
+=== RUN   TestRBACService_GetUserRoles_Success
+    rbac_service_test.go:274: PASS:	GetUserRoles(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_GetUserRoles_Success (0.00s)
+=== RUN   TestRBACService_GetUserRoles_Error
+    rbac_service_test.go:291: PASS:	GetUserRoles(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_GetUserRoles_Error (0.00s)
+=== RUN   TestRBACService_GetRolePermissions_Success
+    rbac_service_test.go:320: PASS:	GetRolePermissions(context.backgroundCtx,string)
+--- PASS: TestRBACService_GetRolePermissions_Success (0.00s)
+=== RUN   TestRBACService_GetRolePermissions_Error
+    rbac_service_test.go:337: PASS:	GetRolePermissions(context.backgroundCtx,string)
+--- PASS: TestRBACService_GetRolePermissions_Error (0.00s)
+=== RUN   TestRBACService_Integration_UserRoleAssignment
+    rbac_service_test.go:375: PASS:	AssignRoleToUser(context.backgroundCtx,string,string,string)
+    rbac_service_test.go:375: PASS:	AssignPermissionToRole(context.backgroundCtx,string,string)
+    rbac_service_test.go:375: PASS:	UserHasPermission(context.backgroundCtx,string,string,string)
+    rbac_service_test.go:375: PASS:	GetUserRoles(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_Integration_UserRoleAssignment (0.00s)
+=== RUN   TestRBACService_Integration_ServiceRoleAssignment
+    rbac_service_test.go:401: PASS:	AssignRoleToService(context.backgroundCtx,string,string,string)
+    rbac_service_test.go:401: PASS:	AssignPermissionToRole(context.backgroundCtx,string,string)
+    rbac_service_test.go:401: PASS:	ServiceHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_Integration_ServiceRoleAssignment (0.00s)
+PASS
+ok  	auth-service/internal/service	(cached)

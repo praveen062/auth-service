@@ -1,0 +1,109 @@
+server:
+  port: 8080
+  grpc_port: 9090
+  host: "0.0.0.0"
+  read_timeout: 30s
+  write_timeout: 30s
+  max_header_bytes: 1048576
+
+database:
+  host: "localhost"
+  port: 5432
+  name: "auth_service"
+  user: "postgres"
+  password: "password"
+  sslmode: "disable"
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: "5m"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+  min_idle_conns: 5
+  dial_timeout: "5s"
+  read_timeout: "3s"
+  write_timeout: "3s"
+
+oauth:
+  google:
+    client_id: "your-google-client-id"
+    client_secret: "your-google-client-secret"
+    redirect_url: "http://localhost:8080/api/v1/oauth/google/callback"
+    scopes:
+      - "https://www.googleapis.com/auth/userinfo.email"
+      - "https://www.googleapis.com/auth/userinfo.profile"
+  
+  providers:
+    - name: "google"
+      enabled: true
+      client_id_env: "GOOGLE_CLIENT_ID"
+      client_secret_env: "GOOGLE_CLIENT_SECRET"
+      redirect_url: "http://localhost:8080/api/v1/oauth/google/callback"
+
+jwt:
+  secret: "your-super-secret-jwt-key-change-in-production"
+  expiration_hours: 24
+  refresh_expiration_hours: 168  # 7 days
+  issuer: "auth-service"
+  audience: "auth-service-users"
+
+security:
+  bcrypt_cost: 12
+  password_min_length: 8
+  password_require_uppercase: true
+  password_require_lowercase: true
+  password_require_numbers: true
+  password_require_special: true
+  rate_limit_requests: 100
+  rate_limit_window: "1m"
+  cors_allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8080"
+  cors_allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  cors_allowed_headers:
+    - "Content-Type"
+    - "Authorization"
+    - "X-Requested-With"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+  include_caller: true
+  include_stacktrace: true
+
+cache:
+  ttl:
+    user_session: "24h"
+    tenant_config: "1h"
+    oauth_state: "10m"
+    one_time_token: "1h"
+  prefix:
+    user_session: "session:"
+    tenant_config: "tenant:"
+    oauth_state: "oauth_state:"
+    one_time_token: "one_time:"
+
+tenancy:
+  default_tenant_id: "default"
+  tenant_header: "X-Tenant-ID"
+  tenant_cookie: "tenant_id"
+  auto_create_tenant: true
+  max_tenants_per_user: 10
+
+one_time_auth:
+  token_length: 32
+  max_uses: 1
+  expiration_hours: 1
+  allowed_urls:
+    - "/api/v1/auth/verify"
+    - "/api/v1/oauth/callback" 

@@ -1,0 +1,13 @@
+PASS
+ok  	auth-service/cmd/server	0.295s
+?   	auth-service/docs	[no test files]
+PASS
+ok  	auth-service/internal/config	0.199s
+PASS
+ok  	auth-service/internal/handler/rest	0.220s
+PASS
+ok  	auth-service/internal/middleware	0.209s
+PASS
+ok  	auth-service/internal/models	0.181s
+PASS
+ok  	auth-service/internal/service	0.188s

@@ -1,0 +1,34 @@
+=== RUN   TestMain_LoadConfig_Success
+--- PASS: TestMain_LoadConfig_Success (0.00s)
+=== RUN   TestMain_LoadConfig_FileNotFound
+--- PASS: TestMain_LoadConfig_FileNotFound (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_AllowedIP
+--- PASS: TestMain_IPAllowlistMiddleware_AllowedIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_BlockedIP
+--- PASS: TestMain_IPAllowlistMiddleware_BlockedIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_IPv6Allowed
+--- PASS: TestMain_IPAllowlistMiddleware_IPv6Allowed (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_EmptyAllowedIPs
+--- PASS: TestMain_IPAllowlistMiddleware_EmptyAllowedIPs (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_ProxyHeaders
+--- PASS: TestMain_IPAllowlistMiddleware_ProxyHeaders (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_RealIPHeader
+--- PASS: TestMain_IPAllowlistMiddleware_RealIPHeader (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_MultipleForwardedIPs
+--- PASS: TestMain_IPAllowlistMiddleware_MultipleForwardedIPs (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_InvalidIP
+--- PASS: TestMain_IPAllowlistMiddleware_InvalidIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_SubnetMatching
+--- PASS: TestMain_IPAllowlistMiddleware_SubnetMatching (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_SubnetBlocked
+--- PASS: TestMain_IPAllowlistMiddleware_SubnetBlocked (0.00s)
+=== RUN   TestMain_ConfigurationValidation
+--- PASS: TestMain_ConfigurationValidation (0.00s)
+=== RUN   TestMain_DatabaseDSN_Generation
+--- PASS: TestMain_DatabaseDSN_Generation (0.00s)
+=== RUN   TestMain_RedisAddr_Generation
+--- PASS: TestMain_RedisAddr_Generation (0.00s)
+=== RUN   TestMain_EnvironmentVariableOverride
+--- PASS: TestMain_EnvironmentVariableOverride (0.00s)
+PASS
+ok  	auth-service/cmd/server	(cached)

@@ -1,0 +1,297 @@
+	auth-service/docs		coverage: 0.0% of statements
+=== RUN   TestMain_LoadConfig_Success
+--- PASS: TestMain_LoadConfig_Success (0.00s)
+=== RUN   TestMain_LoadConfig_FileNotFound
+--- PASS: TestMain_LoadConfig_FileNotFound (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_AllowedIP
+--- PASS: TestMain_IPAllowlistMiddleware_AllowedIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_BlockedIP
+--- PASS: TestMain_IPAllowlistMiddleware_BlockedIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_IPv6Allowed
+--- PASS: TestMain_IPAllowlistMiddleware_IPv6Allowed (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_EmptyAllowedIPs
+--- PASS: TestMain_IPAllowlistMiddleware_EmptyAllowedIPs (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_ProxyHeaders
+--- PASS: TestMain_IPAllowlistMiddleware_ProxyHeaders (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_RealIPHeader
+--- PASS: TestMain_IPAllowlistMiddleware_RealIPHeader (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_MultipleForwardedIPs
+--- PASS: TestMain_IPAllowlistMiddleware_MultipleForwardedIPs (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_InvalidIP
+--- PASS: TestMain_IPAllowlistMiddleware_InvalidIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_SubnetMatching
+--- PASS: TestMain_IPAllowlistMiddleware_SubnetMatching (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_SubnetBlocked
+--- PASS: TestMain_IPAllowlistMiddleware_SubnetBlocked (0.00s)
+=== RUN   TestMain_ConfigurationValidation
+--- PASS: TestMain_ConfigurationValidation (0.00s)
+=== RUN   TestMain_DatabaseDSN_Generation
+--- PASS: TestMain_DatabaseDSN_Generation (0.00s)
+=== RUN   TestMain_RedisAddr_Generation
+--- PASS: TestMain_RedisAddr_Generation (0.00s)
+=== RUN   TestMain_EnvironmentVariableOverride
+--- PASS: TestMain_EnvironmentVariableOverride (0.00s)
+PASS
+coverage: 20.0% of statements
+ok  	auth-service/cmd/server	0.478s	coverage: 20.0% of statements
+=== RUN   TestLoadConfig_Success
+--- PASS: TestLoadConfig_Success (0.00s)
+=== RUN   TestLoadConfig_FileNotFound
+--- PASS: TestLoadConfig_FileNotFound (0.00s)
+=== RUN   TestLoadConfig_InvalidYAML
+--- PASS: TestLoadConfig_InvalidYAML (0.00s)
+=== RUN   TestLoadConfig_WithEnvironmentVariables
+--- PASS: TestLoadConfig_WithEnvironmentVariables (0.00s)
+=== RUN   TestLoadConfig_DefaultValues
+--- PASS: TestLoadConfig_DefaultValues (0.00s)
+=== RUN   TestDatabaseConfig_GetDSN
+--- PASS: TestDatabaseConfig_GetDSN (0.00s)
+=== RUN   TestDatabaseConfig_GetDSN_WithSSL
+--- PASS: TestDatabaseConfig_GetDSN_WithSSL (0.00s)
+=== RUN   TestRedisConfig_GetRedisAddr
+--- PASS: TestRedisConfig_GetRedisAddr (0.00s)
+=== RUN   TestRedisConfig_GetRedisAddr_CustomHost
+--- PASS: TestRedisConfig_GetRedisAddr_CustomHost (0.00s)
+=== RUN   TestConfig_Validation
+--- PASS: TestConfig_Validation (0.00s)
+=== RUN   TestConfig_CompleteConfiguration
+--- PASS: TestConfig_CompleteConfiguration (0.00s)
+PASS
+coverage: 97.7% of statements
+ok  	auth-service/internal/config	0.840s	coverage: 97.7% of statements
+=== RUN   TestAuthHandler_Login_Success
+--- PASS: TestAuthHandler_Login_Success (0.00s)
+=== RUN   TestAuthHandler_Login_InvalidEmail
+--- PASS: TestAuthHandler_Login_InvalidEmail (0.00s)
+=== RUN   TestAuthHandler_Login_MissingFields
+--- PASS: TestAuthHandler_Login_MissingFields (0.00s)
+=== RUN   TestAuthHandler_Register_Success
+--- PASS: TestAuthHandler_Register_Success (0.00s)
+=== RUN   TestAuthHandler_Register_InvalidEmail
+--- PASS: TestAuthHandler_Register_InvalidEmail (0.00s)
+=== RUN   TestAuthHandler_Register_MissingFields
+--- PASS: TestAuthHandler_Register_MissingFields (0.00s)
+=== RUN   TestAuthHandler_RefreshToken_Success
+--- PASS: TestAuthHandler_RefreshToken_Success (0.00s)
+=== RUN   TestAuthHandler_RefreshToken_MissingToken
+--- PASS: TestAuthHandler_RefreshToken_MissingToken (0.00s)
+=== RUN   TestAuthHandler_Logout_Success
+--- PASS: TestAuthHandler_Logout_Success (0.00s)
+=== RUN   TestAuthHandler_Login_InvalidJSON
+--- PASS: TestAuthHandler_Login_InvalidJSON (0.00s)
+=== RUN   TestAuthHandler_Register_EmptyPassword
+--- PASS: TestAuthHandler_Register_EmptyPassword (0.00s)
+=== RUN   TestAuthHandler_NewAuthHandler
+--- PASS: TestAuthHandler_NewAuthHandler (0.00s)
+=== RUN   TestOAuthHandler_GoogleLogin_Success
+--- PASS: TestOAuthHandler_GoogleLogin_Success (0.00s)
+=== RUN   TestOAuthHandler_GoogleLogin_WithCustomRedirectURI
+--- PASS: TestOAuthHandler_GoogleLogin_WithCustomRedirectURI (0.00s)
+=== RUN   TestOAuthHandler_GoogleLogin_MissingTenantID
+--- PASS: TestOAuthHandler_GoogleLogin_MissingTenantID (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_Success
+--- PASS: TestOAuthHandler_GoogleCallback_Success (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_MissingCode
+--- PASS: TestOAuthHandler_GoogleCallback_MissingCode (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_OAuthError
+--- PASS: TestOAuthHandler_GoogleCallback_OAuthError (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_Success
+--- PASS: TestOAuthHandler_ClientCredentials_Success (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_UnsupportedGrantType
+--- PASS: TestOAuthHandler_ClientCredentials_UnsupportedGrantType (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_InvalidJSON
+--- PASS: TestOAuthHandler_ClientCredentials_InvalidJSON (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_Success
+--- PASS: TestOAuthHandler_CreateOneTimeToken_Success (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_MissingURL
+--- PASS: TestOAuthHandler_CreateOneTimeToken_MissingURL (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_Success
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_Success (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_MissingToken
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_MissingToken (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_InvalidToken
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_InvalidToken (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_Success
+--- PASS: TestOAuthHandler_RefreshSession_Success (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_MissingSessionID
+--- PASS: TestOAuthHandler_RefreshSession_MissingSessionID (0.00s)
+=== RUN   TestOAuthHandler_NewOAuthHandler
+--- PASS: TestOAuthHandler_NewOAuthHandler (0.00s)
+PASS
+coverage: 91.1% of statements
+ok  	auth-service/internal/handler/rest	1.227s	coverage: 91.1% of statements
+=== RUN   TestRBACMiddleware_UserHasPermission_Success
+    rbac_middleware_test.go:89: PASS:	UserHasPermission(string,string,string,string)
+--- PASS: TestRBACMiddleware_UserHasPermission_Success (0.00s)
+=== RUN   TestRBACMiddleware_UserDoesNotHavePermission
+    rbac_middleware_test.go:126: PASS:	UserHasPermission(string,string,string,string)
+--- PASS: TestRBACMiddleware_UserDoesNotHavePermission (0.00s)
+=== RUN   TestRBACMiddleware_MissingUserID
+--- PASS: TestRBACMiddleware_MissingUserID (0.00s)
+=== RUN   TestRBACMiddleware_MissingTenantID
+--- PASS: TestRBACMiddleware_MissingTenantID (0.00s)
+=== RUN   TestRBACMiddleware_RBACServiceError
+    rbac_middleware_test.go:225: PASS:	UserHasPermission(string,string,string,string)
+--- PASS: TestRBACMiddleware_RBACServiceError (0.00s)
+=== RUN   TestRBACMiddleware_DifferentPermissions
+    rbac_middleware_test.go:274: PASS:	UserHasPermission(string,string,string,string)
+    rbac_middleware_test.go:274: PASS:	UserHasPermission(string,string,string,string)
+--- PASS: TestRBACMiddleware_DifferentPermissions (0.00s)
+=== RUN   TestRBACMiddleware_DifferentUsers
+    rbac_middleware_test.go:322: PASS:	UserHasPermission(string,string,string,string)
+    rbac_middleware_test.go:322: PASS:	UserHasPermission(string,string,string,string)
+--- PASS: TestRBACMiddleware_DifferentUsers (0.00s)
+=== RUN   TestRBACMiddleware_DifferentTenants
+    rbac_middleware_test.go:370: PASS:	UserHasPermission(string,string,string,string)
+    rbac_middleware_test.go:370: PASS:	UserHasPermission(string,string,string,string)
+--- PASS: TestRBACMiddleware_DifferentTenants (0.00s)
+PASS
+coverage: 100.0% of statements
+ok  	auth-service/internal/middleware	0.226s	coverage: 100.0% of statements
+=== RUN   TestRole_Structure
+--- PASS: TestRole_Structure (0.00s)
+=== RUN   TestRole_DefaultRole
+--- PASS: TestRole_DefaultRole (0.00s)
+=== RUN   TestPermission_Structure
+--- PASS: TestPermission_Structure (0.00s)
+=== RUN   TestRolePermission_Structure
+--- PASS: TestRolePermission_Structure (0.00s)
+=== RUN   TestUserRole_Structure
+--- PASS: TestUserRole_Structure (0.00s)
+=== RUN   TestServiceRole_Structure
+--- PASS: TestServiceRole_Structure (0.00s)
+=== RUN   TestRole_EmptyFields
+--- PASS: TestRole_EmptyFields (0.00s)
+=== RUN   TestPermission_EmptyFields
+--- PASS: TestPermission_EmptyFields (0.00s)
+=== RUN   TestRolePermission_EmptyFields
+--- PASS: TestRolePermission_EmptyFields (0.00s)
+=== RUN   TestUserRole_EmptyFields
+--- PASS: TestUserRole_EmptyFields (0.00s)
+=== RUN   TestServiceRole_EmptyFields
+--- PASS: TestServiceRole_EmptyFields (0.00s)
+=== RUN   TestRole_ComplexName
+--- PASS: TestRole_ComplexName (0.00s)
+=== RUN   TestPermission_ComplexName
+--- PASS: TestPermission_ComplexName (0.00s)
+=== RUN   TestRole_WithSpecialCharacters
+--- PASS: TestRole_WithSpecialCharacters (0.00s)
+=== RUN   TestPermission_WithSpecialCharacters
+--- PASS: TestPermission_WithSpecialCharacters (0.00s)
+=== RUN   TestRolePermission_WithSpecialCharacters
+--- PASS: TestRolePermission_WithSpecialCharacters (0.00s)
+=== RUN   TestUserRole_WithSpecialCharacters
+--- PASS: TestUserRole_WithSpecialCharacters (0.00s)
+=== RUN   TestServiceRole_WithSpecialCharacters
+--- PASS: TestServiceRole_WithSpecialCharacters (0.00s)
+=== RUN   TestRole_Validation
+=== RUN   TestRole_Validation/Valid_role
+=== RUN   TestRole_Validation/Empty_ID
+=== RUN   TestRole_Validation/Empty_TenantID
+=== RUN   TestRole_Validation/Empty_Name
+--- PASS: TestRole_Validation (0.00s)
+    --- PASS: TestRole_Validation/Valid_role (0.00s)
+    --- PASS: TestRole_Validation/Empty_ID (0.00s)
+    --- PASS: TestRole_Validation/Empty_TenantID (0.00s)
+    --- PASS: TestRole_Validation/Empty_Name (0.00s)
+=== RUN   TestPermission_Validation
+=== RUN   TestPermission_Validation/Valid_permission
+=== RUN   TestPermission_Validation/Empty_ID
+=== RUN   TestPermission_Validation/Empty_Name
+--- PASS: TestPermission_Validation (0.00s)
+    --- PASS: TestPermission_Validation/Valid_permission (0.00s)
+    --- PASS: TestPermission_Validation/Empty_ID (0.00s)
+    --- PASS: TestPermission_Validation/Empty_Name (0.00s)
+=== RUN   TestRolePermission_Validation
+=== RUN   TestRolePermission_Validation/Valid_role_permission
+=== RUN   TestRolePermission_Validation/Empty_RoleID
+=== RUN   TestRolePermission_Validation/Empty_PermissionID
+--- PASS: TestRolePermission_Validation (0.00s)
+    --- PASS: TestRolePermission_Validation/Valid_role_permission (0.00s)
+    --- PASS: TestRolePermission_Validation/Empty_RoleID (0.00s)
+    --- PASS: TestRolePermission_Validation/Empty_PermissionID (0.00s)
+=== RUN   TestUserRole_Validation
+=== RUN   TestUserRole_Validation/Valid_user_role
+=== RUN   TestUserRole_Validation/Empty_UserID
+=== RUN   TestUserRole_Validation/Empty_RoleID
+=== RUN   TestUserRole_Validation/Empty_TenantID
+--- PASS: TestUserRole_Validation (0.00s)
+    --- PASS: TestUserRole_Validation/Valid_user_role (0.00s)
+    --- PASS: TestUserRole_Validation/Empty_UserID (0.00s)
+    --- PASS: TestUserRole_Validation/Empty_RoleID (0.00s)
+    --- PASS: TestUserRole_Validation/Empty_TenantID (0.00s)
+=== RUN   TestServiceRole_Validation
+=== RUN   TestServiceRole_Validation/Valid_service_role
+=== RUN   TestServiceRole_Validation/Empty_ServiceID
+=== RUN   TestServiceRole_Validation/Empty_RoleID
+=== RUN   TestServiceRole_Validation/Empty_TenantID
+--- PASS: TestServiceRole_Validation (0.00s)
+    --- PASS: TestServiceRole_Validation/Valid_service_role (0.00s)
+    --- PASS: TestServiceRole_Validation/Empty_ServiceID (0.00s)
+    --- PASS: TestServiceRole_Validation/Empty_RoleID (0.00s)
+    --- PASS: TestServiceRole_Validation/Empty_TenantID (0.00s)
+PASS
+coverage: [no statements]
+ok  	auth-service/internal/models	0.656s	coverage: [no statements]
+=== RUN   TestRBACService_AssignRoleToUser_Success
+    rbac_service_test.go:65: PASS:	AssignRoleToUser(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_AssignRoleToUser_Success (0.00s)
+=== RUN   TestRBACService_AssignRoleToUser_Error
+    rbac_service_test.go:81: PASS:	AssignRoleToUser(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_AssignRoleToUser_Error (0.00s)
+=== RUN   TestRBACService_AssignRoleToService_Success
+    rbac_service_test.go:97: PASS:	AssignRoleToService(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_AssignRoleToService_Success (0.00s)
+=== RUN   TestRBACService_AssignRoleToService_Error
+    rbac_service_test.go:113: PASS:	AssignRoleToService(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_AssignRoleToService_Error (0.00s)
+=== RUN   TestRBACService_AssignPermissionToRole_Success
+    rbac_service_test.go:129: PASS:	AssignPermissionToRole(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_AssignPermissionToRole_Success (0.00s)
+=== RUN   TestRBACService_AssignPermissionToRole_Error
+    rbac_service_test.go:145: PASS:	AssignPermissionToRole(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_AssignPermissionToRole_Error (0.00s)
+=== RUN   TestRBACService_UserHasPermission_Success
+    rbac_service_test.go:162: PASS:	UserHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_UserHasPermission_Success (0.00s)
+=== RUN   TestRBACService_UserHasPermission_NoPermission
+    rbac_service_test.go:179: PASS:	UserHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_UserHasPermission_NoPermission (0.00s)
+=== RUN   TestRBACService_UserHasPermission_Error
+    rbac_service_test.go:196: PASS:	UserHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_UserHasPermission_Error (0.00s)
+=== RUN   TestRBACService_ServiceHasPermission_Success
+    rbac_service_test.go:213: PASS:	ServiceHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_ServiceHasPermission_Success (0.00s)
+=== RUN   TestRBACService_ServiceHasPermission_NoPermission
+    rbac_service_test.go:230: PASS:	ServiceHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_ServiceHasPermission_NoPermission (0.00s)
+=== RUN   TestRBACService_ServiceHasPermission_Error
+    rbac_service_test.go:247: PASS:	ServiceHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_ServiceHasPermission_Error (0.00s)
+=== RUN   TestRBACService_GetUserRoles_Success
+    rbac_service_test.go:274: PASS:	GetUserRoles(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_GetUserRoles_Success (0.00s)
+=== RUN   TestRBACService_GetUserRoles_Error
+    rbac_service_test.go:291: PASS:	GetUserRoles(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_GetUserRoles_Error (0.00s)
+=== RUN   TestRBACService_GetRolePermissions_Success
+    rbac_service_test.go:320: PASS:	GetRolePermissions(context.backgroundCtx,string)
+--- PASS: TestRBACService_GetRolePermissions_Success (0.00s)
+=== RUN   TestRBACService_GetRolePermissions_Error
+    rbac_service_test.go:337: PASS:	GetRolePermissions(context.backgroundCtx,string)
+--- PASS: TestRBACService_GetRolePermissions_Error (0.00s)
+=== RUN   TestRBACService_Integration_UserRoleAssignment
+    rbac_service_test.go:375: PASS:	AssignRoleToUser(context.backgroundCtx,string,string,string)
+    rbac_service_test.go:375: PASS:	AssignPermissionToRole(context.backgroundCtx,string,string)
+    rbac_service_test.go:375: PASS:	UserHasPermission(context.backgroundCtx,string,string,string)
+    rbac_service_test.go:375: PASS:	GetUserRoles(context.backgroundCtx,string,string)
+--- PASS: TestRBACService_Integration_UserRoleAssignment (0.00s)
+=== RUN   TestRBACService_Integration_ServiceRoleAssignment
+    rbac_service_test.go:401: PASS:	AssignRoleToService(context.backgroundCtx,string,string,string)
+    rbac_service_test.go:401: PASS:	AssignPermissionToRole(context.backgroundCtx,string,string)
+    rbac_service_test.go:401: PASS:	ServiceHasPermission(context.backgroundCtx,string,string,string)
+--- PASS: TestRBACService_Integration_ServiceRoleAssignment (0.00s)
+PASS
+coverage: [no statements]
+ok  	auth-service/internal/service	1.025s	coverage: [no statements]

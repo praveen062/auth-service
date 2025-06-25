@@ -1,0 +1,2120 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>server: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">auth-service/cmd/server/main.go (20.0%)</option>
+				
+				<option value="file1">auth-service/docs/docs.go (100.0%)</option>
+				
+				<option value="file2">auth-service/internal/config/config.go (97.7%)</option>
+				
+				<option value="file3">auth-service/internal/handler/rest/auth_handler.go (100.0%)</option>
+				
+				<option value="file4">auth-service/internal/handler/rest/oauth_handler.go (88.6%)</option>
+				
+				<option value="file5">auth-service/internal/middleware/rbac_middleware.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "fmt"
+        "log"
+        "net/http"
+        "strings"
+
+        "auth-service/internal/config"
+        rest "auth-service/internal/handler/rest"
+
+        "github.com/gin-gonic/gin"
+        swaggerFiles "github.com/swaggo/files"
+        ginSwagger "github.com/swaggo/gin-swagger"
+
+        // Swagger documentation
+        _ "auth-service/docs"
+)
+
+// @title           Multi-Tenant OAuth Service API
+// @version         1.0
+// @description     A comprehensive OAuth 2.0 service with multi-tenancy, Google OAuth, and service-to-service authentication.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
+
+// @securityDefinitions.oauth2.application OAuth2ClientCredentials
+// @tokenUrl /api/v1/oauth/token
+// @scope.read "Read access"
+// @scope.write "Write access"
+// @scope.admin "Admin access"
+
+// @tag.name Authentication
+// @tag.description Authentication and authorization endpoints
+
+// @tag.name OAuth
+// @tag.description OAuth 2.0 flow endpoints
+
+// @tag.name Tenants
+// @tag.description Multi-tenant management endpoints
+
+// @tag.name RBAC
+// @tag.description Role-based access control endpoints
+
+// @tag.name Services
+// @tag.description Service-to-service authentication endpoints
+
+// ipAllowlistMiddleware allows only requests from allowed IPs
+func ipAllowlistMiddleware(allowedIPs []string) gin.HandlerFunc <span class="cov8" title="10">{
+        return func(c *gin.Context) </span><span class="cov8" title="10">{
+                clientIP := c.ClientIP()
+                for _, ip := range allowedIPs </span><span class="cov10" title="14">{
+                        if strings.HasPrefix(clientIP, ip) </span><span class="cov6" title="5">{
+                                c.Next()
+                                return
+                        }</span>
+                }
+                <span class="cov6" title="5">c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: internal access only"})</span>
+        }
+}
+
+func main() <span class="cov0" title="0">{
+        // Load configuration
+        cfg, err := config.LoadConfig("configs/config.yaml")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("failed to load config: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">fmt.Printf("Loaded config: %+v\n", cfg.Server)
+
+        // Set up Gin
+        gin.SetMode(gin.ReleaseMode)
+        r := gin.New()
+        r.Use(gin.Logger(), gin.Recovery())
+
+        // Register REST handlers
+        authHandler := rest.NewAuthHandler(cfg)
+        oauthHandler := rest.NewOAuthHandler(cfg)
+
+        api := r.Group("/api/v1")
+        </span><span class="cov0" title="0">{
+                auth := api.Group("/auth")
+                auth.POST("/login", authHandler.Login)
+                auth.POST("/register", authHandler.Register)
+                auth.POST("/refresh", authHandler.RefreshToken)
+                auth.POST("/logout", authHandler.Logout)
+
+                oauth := api.Group("/oauth")
+                oauth.GET("/google/login", oauthHandler.GoogleLogin)
+                oauth.GET("/google/callback", oauthHandler.GoogleCallback)
+                oauth.POST("/token", oauthHandler.ClientCredentials)
+                oauth.POST("/one-time", oauthHandler.CreateOneTimeToken)
+                oauth.GET("/verify", oauthHandler.VerifyOneTimeToken)
+                oauth.POST("/refresh", oauthHandler.RefreshSession)
+        }</span>
+
+        // Swagger UI - internal only (localhost)
+        <span class="cov0" title="0">allowedIPs := []string{"127.0.0.1", "::1"}
+        r.GET("/swagger/*any", ipAllowlistMiddleware(allowedIPs), ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+        // Start server
+        addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+        if err := r.Run(addr); err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("failed to start server: %v", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Package docs Code generated by swaggo/swag. DO NOT EDIT
+package docs
+
+import "github.com/swaggo/swag"
+
+const docTemplate = `{
+    "schemes": {{ marshal .Schemes }},
+    "swagger": "2.0",
+    "info": {
+        "description": "{{escape .Description}}",
+        "title": "{{.Title}}",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "{{.Version}}"
+    },
+    "host": "{{.Host}}",
+    "basePath": "{{.BasePath}}",
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "Authenticate a user with email and password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Logout a user and invalidate their tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "User logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Refresh an expired access token using a refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "description": "Refresh token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Register a new user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "User registration",
+                "parameters": [
+                    {
+                        "description": "Registration data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/rest.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth/complete": {
+            "post": {
+                "description": "Mark a one-time session as completed (e.g., survey submitted) and invalidate the token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Complete one-time session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"one-time-token-123\"",
+                        "description": "One-time token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"survey-session-456\"",
+                        "description": "Session ID",
+                        "name": "session",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"survey-submit-page\"",
+                        "description": "Page ID",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth/google/callback": {
+            "get": {
+                "description": "Handle Google OAuth callback and exchange code for tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Google OAuth callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"4/0AfJohXn...\"",
+                        "description": "Authorization code from Google",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"tenant-123\"",
+                        "description": "State parameter",
+                        "name": "state",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"access_denied\"",
+                        "description": "Error from Google OAuth",
+                        "name": "error",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth/google/login": {
+            "get": {
+                "description": "Redirect user to Google OAuth for authentication",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Initiate Google OAuth login",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"tenant-123\"",
+                        "description": "Tenant ID",
+                        "name": "tenant_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://app.example.com/callback\"",
+                        "description": "Custom redirect URI",
+                        "name": "redirect_uri",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to Google OAuth",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth/one-time": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a one-time token for secure access to specific URLs with session and page restrictions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Create one-time authentication token",
+                "parameters": [
+                    {
+                        "description": "One-time token parameters",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.OneTimeTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/rest.OneTimeTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth/token": {
+            "post": {
+                "description": "Exchange client credentials for access token (service-to-service authentication)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "OAuth 2.0 Client Credentials Flow",
+                "parameters": [
+                    {
+                        "description": "Client credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.ClientCredentialsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ClientCredentialsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth/verify": {
+            "get": {
+                "description": "Verify and consume a one-time token with session and page validation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Verify one-time authentication token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"one-time-token-123\"",
+                        "description": "One-time token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"survey-session-456\"",
+                        "description": "Session ID",
+                        "name": "session",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"survey-submit-page\"",
+                        "description": "Page ID",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.OneTimeSessionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "rest.ClientCredentialsRequest": {
+            "type": "object",
+            "required": [
+                "client_id",
+                "client_secret",
+                "grant_type"
+            ],
+            "properties": {
+                "client_id": {
+                    "type": "string",
+                    "example": "service-client-123"
+                },
+                "client_secret": {
+                    "type": "string",
+                    "example": "service-secret-456"
+                },
+                "grant_type": {
+                    "type": "string",
+                    "example": "client_credentials"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "read:users write:users"
+                }
+            }
+        },
+        "rest.ClientCredentialsResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "expires_in": {
+                    "type": "integer",
+                    "example": 3600
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "read:users write:users"
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
+                }
+            }
+        },
+        "rest.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "validation_error"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Invalid request data"
+                }
+            }
+        },
+        "rest.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "tenant_id"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                },
+                "tenant_id": {
+                    "type": "string",
+                    "example": "tenant-123"
+                }
+            }
+        },
+        "rest.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "expires_in": {
+                    "type": "integer",
+                    "example": 3600
+                },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
+                },
+                "user": {
+                    "$ref": "#/definitions/rest.User"
+                }
+            }
+        },
+        "rest.OneTimeSessionResponse": {
+            "type": "object",
+            "properties": {
+                "is_valid": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Token validated successfully"
+                },
+                "page_id": {
+                    "type": "string",
+                    "example": "survey-submit-page"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "survey-session-456"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "one-time-token-123"
+                },
+                "user": {
+                    "$ref": "#/definitions/rest.User"
+                }
+            }
+        },
+        "rest.OneTimeTokenRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "expires_in": {
+                    "type": "integer",
+                    "example": 3600
+                },
+                "max_uses": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "page_id": {
+                    "description": "Specific page/action identifier",
+                    "type": "string",
+                    "example": "survey-submit-page"
+                },
+                "session_id": {
+                    "description": "Unique session identifier",
+                    "type": "string",
+                    "example": "survey-session-456"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://app.example.com/survey/123"
+                }
+            }
+        },
+        "rest.OneTimeTokenResponse": {
+            "type": "object",
+            "properties": {
+                "expires_in": {
+                    "type": "integer",
+                    "example": 3600
+                },
+                "max_uses": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "page_id": {
+                    "type": "string",
+                    "example": "survey-submit-page"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "survey-session-456"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "one-time-token-123"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://app.example.com/survey/123?token=one-time-token-123\u0026session=survey-session-456\u0026page=survey-submit-page"
+                }
+            }
+        },
+        "rest.RefreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+            }
+        },
+        "rest.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "first_name",
+                "last_name",
+                "password",
+                "tenant_id"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "first_name": {
+                    "type": "string",
+                    "example": "John"
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Doe"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                },
+                "tenant_id": {
+                    "type": "string",
+                    "example": "tenant-123"
+                }
+            }
+        },
+        "rest.Role": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "role-123"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "rest.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Operation completed successfully"
+                }
+            }
+        },
+        "rest.User": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "user-123"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rest.Role"
+                    }
+                },
+                "tenant_id": {
+                    "type": "string",
+                    "example": "tenant-123"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        },
+        "OAuth2ClientCredentials": {
+            "type": "oauth2",
+            "flow": "application",
+            "tokenUrl": "/api/v1/oauth/token",
+            "scopes": {
+                "admin": "\"Admin access\"",
+                "read": "\"Read access\"",
+                "write": "\"Write access\""
+            }
+        }
+    },
+    "tags": [
+        {
+            "description": "Authentication and authorization endpoints",
+            "name": "Authentication"
+        },
+        {
+            "description": "OAuth 2.0 flow endpoints",
+            "name": "OAuth"
+        },
+        {
+            "description": "Multi-tenant management endpoints",
+            "name": "Tenants"
+        },
+        {
+            "description": "Role-based access control endpoints",
+            "name": "RBAC"
+        },
+        {
+            "description": "Service-to-service authentication endpoints",
+            "name": "Services"
+        }
+    ]
+}`
+
+// SwaggerInfo holds exported Swagger Info so clients can modify it
+var SwaggerInfo = &amp;swag.Spec{
+        Version:          "1.0",
+        Host:             "localhost:8080",
+        BasePath:         "/api/v1",
+        Schemes:          []string{},
+        Title:            "Multi-Tenant OAuth Service API",
+        Description:      "A comprehensive OAuth 2.0 service with multi-tenancy, Google OAuth, and service-to-service authentication.",
+        InfoInstanceName: "swagger",
+        SwaggerTemplate:  docTemplate,
+        LeftDelim:        "{{",
+        RightDelim:       "}}",
+}
+
+func init() <span class="cov8" title="1">{
+        swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package config
+
+import (
+        "fmt"
+        "time"
+
+        "github.com/spf13/viper"
+)
+
+// Config holds all configuration for the application
+type Config struct {
+        Server   ServerConfig   `mapstructure:"server"`
+        Database DatabaseConfig `mapstructure:"database"`
+        Redis    RedisConfig    `mapstructure:"redis"`
+        OAuth    OAuthConfig    `mapstructure:"oauth"`
+        JWT      JWTConfig      `mapstructure:"jwt"`
+        Security SecurityConfig `mapstructure:"security"`
+        Logging  LoggingConfig  `mapstructure:"logging"`
+        Cache    CacheConfig    `mapstructure:"cache"`
+        Tenancy  TenancyConfig  `mapstructure:"tenancy"`
+        OneTime  OneTimeConfig  `mapstructure:"one_time_auth"`
+}
+
+// ServerConfig holds server configuration
+type ServerConfig struct {
+        Port           int           `mapstructure:"port"`
+        GRPCPort       int           `mapstructure:"grpc_port"`
+        Host           string        `mapstructure:"host"`
+        ReadTimeout    time.Duration `mapstructure:"read_timeout"`
+        WriteTimeout   time.Duration `mapstructure:"write_timeout"`
+        MaxHeaderBytes int           `mapstructure:"max_header_bytes"`
+}
+
+// DatabaseConfig holds database configuration
+type DatabaseConfig struct {
+        Host            string        `mapstructure:"host"`
+        Port            int           `mapstructure:"port"`
+        Name            string        `mapstructure:"name"`
+        User            string        `mapstructure:"user"`
+        Password        string        `mapstructure:"password"`
+        SSLMode         string        `mapstructure:"sslmode"`
+        MaxOpenConns    int           `mapstructure:"max_open_conns"`
+        MaxIdleConns    int           `mapstructure:"max_idle_conns"`
+        ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
+}
+
+// RedisConfig holds Redis configuration
+type RedisConfig struct {
+        Host         string        `mapstructure:"host"`
+        Port         int           `mapstructure:"port"`
+        Password     string        `mapstructure:"password"`
+        DB           int           `mapstructure:"db"`
+        PoolSize     int           `mapstructure:"pool_size"`
+        MinIdleConns int           `mapstructure:"min_idle_conns"`
+        DialTimeout  time.Duration `mapstructure:"dial_timeout"`
+        ReadTimeout  time.Duration `mapstructure:"read_timeout"`
+        WriteTimeout time.Duration `mapstructure:"write_timeout"`
+}
+
+// OAuthConfig holds OAuth configuration
+type OAuthConfig struct {
+        Google    GoogleOAuthConfig `mapstructure:"google"`
+        Providers []OAuthProvider   `mapstructure:"providers"`
+}
+
+// GoogleOAuthConfig holds Google OAuth specific configuration
+type GoogleOAuthConfig struct {
+        ClientID     string   `mapstructure:"client_id"`
+        ClientSecret string   `mapstructure:"client_secret"`
+        RedirectURL  string   `mapstructure:"redirect_url"`
+        Scopes       []string `mapstructure:"scopes"`
+}
+
+// OAuthProvider holds OAuth provider configuration
+type OAuthProvider struct {
+        Name            string `mapstructure:"name"`
+        Enabled         bool   `mapstructure:"enabled"`
+        ClientIDEnv     string `mapstructure:"client_id_env"`
+        ClientSecretEnv string `mapstructure:"client_secret_env"`
+        RedirectURL     string `mapstructure:"redirect_url"`
+}
+
+// JWTConfig holds JWT configuration
+type JWTConfig struct {
+        Secret                 string `mapstructure:"secret"`
+        ExpirationHours        int    `mapstructure:"expiration_hours"`
+        RefreshExpirationHours int    `mapstructure:"refresh_expiration_hours"`
+        Issuer                 string `mapstructure:"issuer"`
+        Audience               string `mapstructure:"audience"`
+}
+
+// SecurityConfig holds security configuration
+type SecurityConfig struct {
+        BcryptCost             int      `mapstructure:"bcrypt_cost"`
+        PasswordMinLength      int      `mapstructure:"password_min_length"`
+        PasswordRequireUpper   bool     `mapstructure:"password_require_uppercase"`
+        PasswordRequireLower   bool     `mapstructure:"password_require_lowercase"`
+        PasswordRequireNumbers bool     `mapstructure:"password_require_numbers"`
+        PasswordRequireSpecial bool     `mapstructure:"password_require_special"`
+        RateLimitRequests      int      `mapstructure:"rate_limit_requests"`
+        RateLimitWindow        string   `mapstructure:"rate_limit_window"`
+        CORSAllowedOrigins     []string `mapstructure:"cors_allowed_origins"`
+        CORSAllowedMethods     []string `mapstructure:"cors_allowed_methods"`
+        CORSAllowedHeaders     []string `mapstructure:"cors_allowed_headers"`
+}
+
+// LoggingConfig holds logging configuration
+type LoggingConfig struct {
+        Level             string `mapstructure:"level"`
+        Format            string `mapstructure:"format"`
+        Output            string `mapstructure:"output"`
+        IncludeCaller     bool   `mapstructure:"include_caller"`
+        IncludeStacktrace bool   `mapstructure:"include_stacktrace"`
+}
+
+// CacheConfig holds cache configuration
+type CacheConfig struct {
+        TTL    CacheTTLConfig    `mapstructure:"ttl"`
+        Prefix CachePrefixConfig `mapstructure:"prefix"`
+}
+
+// CacheTTLConfig holds cache TTL configuration
+type CacheTTLConfig struct {
+        UserSession  string `mapstructure:"user_session"`
+        TenantConfig string `mapstructure:"tenant_config"`
+        OAuthState   string `mapstructure:"oauth_state"`
+        OneTimeToken string `mapstructure:"one_time_token"`
+}
+
+// CachePrefixConfig holds cache prefix configuration
+type CachePrefixConfig struct {
+        UserSession  string `mapstructure:"user_session"`
+        TenantConfig string `mapstructure:"tenant_config"`
+        OAuthState   string `mapstructure:"oauth_state"`
+        OneTimeToken string `mapstructure:"one_time_token"`
+}
+
+// TenancyConfig holds multi-tenancy configuration
+type TenancyConfig struct {
+        DefaultTenantID   string `mapstructure:"default_tenant_id"`
+        TenantHeader      string `mapstructure:"tenant_header"`
+        TenantCookie      string `mapstructure:"tenant_cookie"`
+        AutoCreateTenant  bool   `mapstructure:"auto_create_tenant"`
+        MaxTenantsPerUser int    `mapstructure:"max_tenants_per_user"`
+}
+
+// OneTimeConfig holds one-time authentication configuration
+type OneTimeConfig struct {
+        TokenLength     int      `mapstructure:"token_length"`
+        MaxUses         int      `mapstructure:"max_uses"`
+        ExpirationHours int      `mapstructure:"expiration_hours"`
+        AllowedURLs     []string `mapstructure:"allowed_urls"`
+}
+
+// LoadConfig loads configuration from file and environment variables
+func LoadConfig(configPath string) (*Config, error) <span class="cov10" title="7">{
+        viper.SetConfigFile(configPath)
+        viper.SetConfigType("yaml")
+
+        // Read environment variables
+        viper.AutomaticEnv()
+
+        // Set default values
+        setDefaults()
+
+        // Read config file
+        if err := viper.ReadInConfig(); err != nil </span><span class="cov4" title="2">{
+                return nil, fmt.Errorf("failed to read config file: %w", err)
+        }</span>
+
+        // Override with environment variables
+        <span class="cov8" title="5">overrideWithEnvVars()
+
+        var config Config
+        if err := viper.Unmarshal(&amp;config); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+        }</span>
+
+        <span class="cov8" title="5">return &amp;config, nil</span>
+}
+
+// setDefaults sets default configuration values
+func setDefaults() <span class="cov10" title="7">{
+        viper.SetDefault("server.port", 8080)
+        viper.SetDefault("server.grpc_port", 9090)
+        viper.SetDefault("server.host", "0.0.0.0")
+        viper.SetDefault("server.read_timeout", "30s")
+        viper.SetDefault("server.write_timeout", "30s")
+        viper.SetDefault("server.max_header_bytes", 1048576)
+
+        viper.SetDefault("database.host", "localhost")
+        viper.SetDefault("database.port", 5432)
+        viper.SetDefault("database.name", "auth_service")
+        viper.SetDefault("database.user", "postgres")
+        viper.SetDefault("database.password", "password")
+        viper.SetDefault("database.sslmode", "disable")
+        viper.SetDefault("database.max_open_conns", 25)
+        viper.SetDefault("database.max_idle_conns", 5)
+        viper.SetDefault("database.conn_max_lifetime", "5m")
+
+        viper.SetDefault("redis.host", "localhost")
+        viper.SetDefault("redis.port", 6379)
+        viper.SetDefault("redis.password", "")
+        viper.SetDefault("redis.db", 0)
+        viper.SetDefault("redis.pool_size", 10)
+        viper.SetDefault("redis.min_idle_conns", 5)
+        viper.SetDefault("redis.dial_timeout", "5s")
+        viper.SetDefault("redis.read_timeout", "3s")
+        viper.SetDefault("redis.write_timeout", "3s")
+
+        viper.SetDefault("jwt.expiration_hours", 24)
+        viper.SetDefault("jwt.refresh_expiration_hours", 168)
+        viper.SetDefault("jwt.issuer", "auth-service")
+        viper.SetDefault("jwt.audience", "auth-service-users")
+
+        viper.SetDefault("security.bcrypt_cost", 12)
+        viper.SetDefault("security.password_min_length", 8)
+        viper.SetDefault("security.password_require_uppercase", true)
+        viper.SetDefault("security.password_require_lowercase", true)
+        viper.SetDefault("security.password_require_numbers", true)
+        viper.SetDefault("security.password_require_special", true)
+        viper.SetDefault("security.rate_limit_requests", 100)
+        viper.SetDefault("security.rate_limit_window", "1m")
+
+        viper.SetDefault("logging.level", "info")
+        viper.SetDefault("logging.format", "json")
+        viper.SetDefault("logging.output", "stdout")
+        viper.SetDefault("logging.include_caller", true)
+        viper.SetDefault("logging.include_stacktrace", true)
+
+        viper.SetDefault("tenancy.default_tenant_id", "default")
+        viper.SetDefault("tenancy.tenant_header", "X-Tenant-ID")
+        viper.SetDefault("tenancy.tenant_cookie", "tenant_id")
+        viper.SetDefault("tenancy.auto_create_tenant", true)
+        viper.SetDefault("tenancy.max_tenants_per_user", 10)
+
+        viper.SetDefault("one_time_auth.token_length", 32)
+        viper.SetDefault("one_time_auth.max_uses", 1)
+        viper.SetDefault("one_time_auth.expiration_hours", 1)
+}</span>
+
+// overrideWithEnvVars overrides configuration with environment variables
+func overrideWithEnvVars() <span class="cov8" title="5">{
+        // Server
+        if serverPort := viper.GetInt("SERVER_PORT"); serverPort != 0 </span><span class="cov4" title="2">{
+                viper.Set("server.port", serverPort)
+        }</span>
+        <span class="cov8" title="5">if serverHost := viper.GetString("SERVER_HOST"); serverHost != "" </span><span class="cov0" title="0">{
+                viper.Set("server.host", serverHost)
+        }</span>
+
+        // Database
+        <span class="cov8" title="5">if dbHost := viper.GetString("DB_HOST"); dbHost != "" </span><span class="cov4" title="2">{
+                viper.Set("database.host", dbHost)
+        }</span>
+        <span class="cov8" title="5">if dbPort := viper.GetInt("DB_PORT"); dbPort != 0 </span><span class="cov8" title="5">{
+                viper.Set("database.port", dbPort)
+        }</span>
+        <span class="cov8" title="5">if dbName := viper.GetString("DB_NAME"); dbName != "" </span><span class="cov8" title="5">{
+                viper.Set("database.name", dbName)
+        }</span>
+        <span class="cov8" title="5">if dbUser := viper.GetString("DB_USER"); dbUser != "" </span><span class="cov8" title="5">{
+                viper.Set("database.user", dbUser)
+        }</span>
+        <span class="cov8" title="5">if dbPassword := viper.GetString("DB_PASSWORD"); dbPassword != "" </span><span class="cov4" title="2">{
+                viper.Set("database.password", dbPassword)
+        }</span>
+
+        // Redis
+        <span class="cov8" title="5">if redisHost := viper.GetString("REDIS_HOST"); redisHost != "" </span><span class="cov8" title="5">{
+                viper.Set("redis.host", redisHost)
+        }</span>
+        <span class="cov8" title="5">if redisPort := viper.GetInt("REDIS_PORT"); redisPort != 0 </span><span class="cov8" title="5">{
+                viper.Set("redis.port", redisPort)
+        }</span>
+        <span class="cov8" title="5">if redisPassword := viper.GetString("REDIS_PASSWORD"); redisPassword != "" </span><span class="cov8" title="5">{
+                viper.Set("redis.password", redisPassword)
+        }</span>
+
+        // JWT
+        <span class="cov8" title="5">if jwtSecret := viper.GetString("JWT_SECRET"); jwtSecret != "" </span><span class="cov4" title="2">{
+                viper.Set("jwt.secret", jwtSecret)
+        }</span>
+
+        // OAuth
+        <span class="cov8" title="5">if googleClientID := viper.GetString("GOOGLE_CLIENT_ID"); googleClientID != "" </span><span class="cov8" title="5">{
+                viper.Set("oauth.google.client_id", googleClientID)
+        }</span>
+        <span class="cov8" title="5">if googleClientSecret := viper.GetString("GOOGLE_CLIENT_SECRET"); googleClientSecret != "" </span><span class="cov8" title="5">{
+                viper.Set("oauth.google.client_secret", googleClientSecret)
+        }</span>
+}
+
+// GetDSN returns the database connection string
+func (c *DatabaseConfig) GetDSN() string <span class="cov4" title="2">{
+        return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+                c.Host, c.Port, c.User, c.Password, c.Name, c.SSLMode)
+}</span>
+
+// GetRedisAddr returns the Redis address
+func (c *RedisConfig) GetRedisAddr() string <span class="cov4" title="2">{
+        return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package rest
+
+import (
+        "auth-service/internal/config"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+// AuthHandler handles authentication-related HTTP requests
+type AuthHandler struct {
+        config *config.Config
+}
+
+// NewAuthHandler creates a new AuthHandler instance
+func NewAuthHandler(cfg *config.Config) *AuthHandler <span class="cov10" title="12">{
+        return &amp;AuthHandler{
+                config: cfg,
+        }
+}</span>
+
+// LoginRequest represents the login request body
+type LoginRequest struct {
+        Email    string `json:"email" binding:"required,email" example:"user@example.com"`
+        Password string `json:"password" binding:"required" example:"password123"`
+        TenantID string `json:"tenant_id" binding:"required" example:"tenant-123"`
+}
+
+// LoginResponse represents the login response body
+type LoginResponse struct {
+        AccessToken  string `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+        RefreshToken string `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+        TokenType    string `json:"token_type" example:"Bearer"`
+        ExpiresIn    int    `json:"expires_in" example:"3600"`
+        User         User   `json:"user"`
+}
+
+// User represents a user in the system
+type User struct {
+        ID       string `json:"id" example:"user-123"`
+        Email    string `json:"email" example:"user@example.com"`
+        TenantID string `json:"tenant_id" example:"tenant-123"`
+        Roles    []Role `json:"roles"`
+}
+
+// Role represents a user role
+type Role struct {
+        ID   string `json:"id" example:"role-123"`
+        Name string `json:"name" example:"admin"`
+}
+
+// Login godoc
+// @Summary User login
+// @Description Authenticate a user with email and password
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/login [post]
+func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
+        var req LoginRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov4" title="3">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "validation_error",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        // TODO: Implement actual authentication logic
+        // For now, return a mock response
+        <span class="cov1" title="1">response := LoginResponse{
+                AccessToken:  "mock-access-token",
+                RefreshToken: "mock-refresh-token",
+                TokenType:    "Bearer",
+                ExpiresIn:    3600,
+                User: User{
+                        ID:       "user-123",
+                        Email:    req.Email,
+                        TenantID: req.TenantID,
+                        Roles: []Role{
+                                {ID: "role-1", Name: "user"},
+                        },
+                },
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// RegisterRequest represents the registration request body
+type RegisterRequest struct {
+        Email     string `json:"email" binding:"required,email" example:"user@example.com"`
+        Password  string `json:"password" binding:"required" example:"password123"`
+        TenantID  string `json:"tenant_id" binding:"required" example:"tenant-123"`
+        FirstName string `json:"first_name" binding:"required" example:"John"`
+        LastName  string `json:"last_name" binding:"required" example:"Doe"`
+}
+
+// Register godoc
+// @Summary User registration
+// @Description Register a new user
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Registration data"
+// @Success 201 {object} User
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/register [post]
+func (h *AuthHandler) Register(c *gin.Context) <span class="cov6" title="4">{
+        var req RegisterRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov4" title="3">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "validation_error",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        // TODO: Implement actual registration logic
+        <span class="cov1" title="1">user := User{
+                ID:       "user-123",
+                Email:    req.Email,
+                TenantID: req.TenantID,
+                Roles: []Role{
+                        {ID: "role-1", Name: "user"},
+                },
+        }
+
+        c.JSON(http.StatusCreated, user)</span>
+}
+
+// RefreshTokenRequest represents the refresh token request body
+type RefreshTokenRequest struct {
+        RefreshToken string `json:"refresh_token" binding:"required" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+}
+
+// RefreshToken godoc
+// @Summary Refresh access token
+// @Description Refresh an expired access token using a refresh token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body RefreshTokenRequest true "Refresh token"
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/refresh [post]
+func (h *AuthHandler) RefreshToken(c *gin.Context) <span class="cov3" title="2">{
+        var req RefreshTokenRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "validation_error",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        // TODO: Implement actual token refresh logic
+        <span class="cov1" title="1">response := LoginResponse{
+                AccessToken:  "new-access-token",
+                RefreshToken: "new-refresh-token",
+                TokenType:    "Bearer",
+                ExpiresIn:    3600,
+                User: User{
+                        ID:       "user-123",
+                        Email:    "user@example.com",
+                        TenantID: "tenant-123",
+                        Roles: []Role{
+                                {ID: "role-1", Name: "user"},
+                        },
+                },
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// Logout godoc
+// @Summary User logout
+// @Description Logout a user and invalidate their tokens
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} SuccessResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/logout [post]
+func (h *AuthHandler) Logout(c *gin.Context) <span class="cov1" title="1">{
+        // TODO: Implement actual logout logic (invalidate tokens)
+        c.JSON(http.StatusOK, SuccessResponse{
+                Message: "Successfully logged out",
+        })
+}</span>
+
+// ErrorResponse represents an error response
+type ErrorResponse struct {
+        Error   string `json:"error" example:"validation_error"`
+        Message string `json:"message" example:"Invalid request data"`
+}
+
+// SuccessResponse represents a success response
+type SuccessResponse struct {
+        Message string `json:"message" example:"Operation completed successfully"`
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package rest
+
+import (
+        "auth-service/internal/config"
+        "fmt"
+        "net/http"
+        "strings"
+
+        "github.com/gin-gonic/gin"
+)
+
+// OAuthHandler handles OAuth-related HTTP requests
+type OAuthHandler struct {
+        config *config.Config
+}
+
+// NewOAuthHandler creates a new OAuthHandler instance
+func NewOAuthHandler(cfg *config.Config) *OAuthHandler <span class="cov10" title="17">{
+        return &amp;OAuthHandler{
+                config: cfg,
+        }
+}</span>
+
+// GoogleLogin godoc
+// @Summary Initiate Google OAuth login
+// @Description Redirect user to Google OAuth for authentication
+// @Tags OAuth
+// @Accept json
+// @Produce json
+// @Param tenant_id query string true "Tenant ID" example("tenant-123")
+// @Param redirect_uri query string false "Custom redirect URI" example("https://app.example.com/callback")
+// @Success 302 {string} string "Redirect to Google OAuth"
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /oauth/google/login [get]
+func (h *OAuthHandler) GoogleLogin(c *gin.Context) <span class="cov4" title="3">{
+        tenantID := c.Query("tenant_id")
+        redirectURI := c.Query("redirect_uri")
+
+        if tenantID == "" </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_tenant_id",
+                        Message: "Tenant ID is required",
+                })
+                return
+        }</span>
+
+        // Use custom redirect URI if provided, otherwise use default
+        <span class="cov3" title="2">callbackURL := h.config.OAuth.Google.RedirectURL
+        if redirectURI != "" </span><span class="cov1" title="1">{
+                callbackURL = redirectURI
+        }</span>
+
+        // TODO: Implement Google OAuth flow
+        // For now, return a mock redirect URL
+        <span class="cov3" title="2">googleAuthURL := "https://accounts.google.com/oauth/authorize?client_id=" + h.config.OAuth.Google.ClientID + "&amp;redirect_uri=" + callbackURL + "&amp;scope=email profile&amp;response_type=code&amp;state=" + tenantID
+
+        c.JSON(http.StatusOK, gin.H{
+                "auth_url": googleAuthURL,
+                "message":  "Redirect to Google OAuth",
+        })</span>
+}
+
+// GoogleCallback godoc
+// @Summary Google OAuth callback
+// @Description Handle Google OAuth callback and exchange code for tokens
+// @Tags OAuth
+// @Accept json
+// @Produce json
+// @Param code query string true "Authorization code from Google" example("4/0AfJohXn...")
+// @Param state query string true "State parameter" example("tenant-123")
+// @Param error query string false "Error from Google OAuth" example("access_denied")
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /oauth/google/callback [get]
+func (h *OAuthHandler) GoogleCallback(c *gin.Context) <span class="cov4" title="3">{
+        code := c.Query("code")
+        state := c.Query("state")
+        oauthError := c.Query("error")
+
+        if oauthError != "" </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "oauth_error",
+                        Message: "OAuth error: " + oauthError,
+                })
+                return
+        }</span>
+
+        <span class="cov3" title="2">if code == "" </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_code",
+                        Message: "Authorization code is required",
+                })
+                return
+        }</span>
+
+        // TODO: Implement Google OAuth token exchange
+        <span class="cov1" title="1">response := LoginResponse{
+                AccessToken:  "google-oauth-token",
+                RefreshToken: "google-refresh-token",
+                TokenType:    "Bearer",
+                ExpiresIn:    3600,
+                User: User{
+                        ID:       "google-user-123",
+                        Email:    "user@gmail.com",
+                        TenantID: state,
+                        Roles: []Role{
+                                {ID: "role-1", Name: "user"},
+                        },
+                },
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// ClientCredentialsRequest represents the OAuth 2.0 client credentials request
+type ClientCredentialsRequest struct {
+        GrantType    string `json:"grant_type" binding:"required" example:"client_credentials"`
+        ClientID     string `json:"client_id" binding:"required" example:"service-client-123"`
+        ClientSecret string `json:"client_secret" binding:"required" example:"service-secret-456"`
+        Scope        string `json:"scope" example:"read:users write:users"`
+}
+
+// ClientCredentialsResponse represents the OAuth 2.0 client credentials response
+type ClientCredentialsResponse struct {
+        AccessToken string `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+        TokenType   string `json:"token_type" example:"Bearer"`
+        ExpiresIn   int    `json:"expires_in" example:"3600"`
+        Scope       string `json:"scope" example:"read:users write:users"`
+}
+
+// ClientCredentials godoc
+// @Summary OAuth 2.0 Client Credentials Flow
+// @Description Exchange client credentials for access token (service-to-service authentication)
+// @Tags OAuth
+// @Accept json
+// @Produce json
+// @Param request body ClientCredentialsRequest true "Client credentials"
+// @Success 200 {object} ClientCredentialsResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /oauth/token [post]
+func (h *OAuthHandler) ClientCredentials(c *gin.Context) <span class="cov4" title="3">{
+        var req ClientCredentialsRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "validation_error",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        <span class="cov3" title="2">if req.GrantType != "client_credentials" </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "unsupported_grant_type",
+                        Message: "Only client_credentials grant type is supported",
+                })
+                return
+        }</span>
+
+        // TODO: Implement client credentials validation
+        // For now, return a mock response
+        <span class="cov1" title="1">response := ClientCredentialsResponse{
+                AccessToken: "service-access-token",
+                TokenType:   "Bearer",
+                ExpiresIn:   3600,
+                Scope:       req.Scope,
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// OneTimeTokenRequest represents the one-time token creation request
+type OneTimeTokenRequest struct {
+        URL           string `json:"url" binding:"required" example:"https://app.example.com/survey/123"`
+        ExpiresIn     int    `json:"expires_in" example:"3600"`
+        MaxUses       int    `json:"max_uses" example:"1"`
+        SessionID     string `json:"session_id" example:"survey-session-456"` // Unique session identifier
+        RefreshWindow int    `json:"refresh_window" example:"300"`            // Session refresh window in seconds
+}
+
+// OneTimeTokenResponse represents the one-time token response
+type OneTimeTokenResponse struct {
+        Token         string `json:"token" example:"one-time-token-123"`
+        URL           string `json:"url" example:"https://app.example.com/survey/123?token=one-time-token-123&amp;session=survey-session-456"`
+        ExpiresIn     int    `json:"expires_in" example:"3600"`
+        MaxUses       int    `json:"max_uses" example:"1"`
+        SessionID     string `json:"session_id" example:"survey-session-456"`
+        RefreshWindow int    `json:"refresh_window" example:"300"`
+}
+
+// CreateOneTimeToken godoc
+// @Summary Create one-time authentication token
+// @Description Create a one-time token for secure access to specific URLs with session management
+// @Tags OAuth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body OneTimeTokenRequest true "One-time token parameters"
+// @Success 201 {object} OneTimeTokenResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /oauth/one-time [post]
+func (h *OAuthHandler) CreateOneTimeToken(c *gin.Context) <span class="cov3" title="2">{
+        var req OneTimeTokenRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "validation_error",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        // Validate required fields
+        <span class="cov1" title="1">if req.SessionID == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_session_id",
+                        Message: "Session ID is required for one-time tokens",
+                })
+                return
+        }</span>
+
+        // Set default refresh window if not provided
+        <span class="cov1" title="1">if req.RefreshWindow == 0 </span><span class="cov0" title="0">{
+                req.RefreshWindow = 300 // 5 minutes default
+        }</span>
+
+        // TODO: Implement one-time token creation with session management
+        // Store in cache/database: token -&gt; {sessionID, maxUses, expiresAt, lastActivity, refreshWindow}
+
+        // Build URL with session parameter
+        <span class="cov1" title="1">urlWithParams := req.URL
+        if strings.Contains(urlWithParams, "?") </span><span class="cov0" title="0">{
+                urlWithParams += "&amp;"
+        }</span> else<span class="cov1" title="1"> {
+                urlWithParams += "?"
+        }</span>
+        <span class="cov1" title="1">urlWithParams += fmt.Sprintf("token=one-time-token-123&amp;session=%s", req.SessionID)
+
+        response := OneTimeTokenResponse{
+                Token:         "one-time-token-123",
+                URL:           urlWithParams,
+                ExpiresIn:     req.ExpiresIn,
+                MaxUses:       req.MaxUses,
+                SessionID:     req.SessionID,
+                RefreshWindow: req.RefreshWindow,
+        }
+
+        c.JSON(http.StatusCreated, response)</span>
+}
+
+// VerifyOneTimeToken godoc
+// @Summary Verify one-time authentication token
+// @Description Verify and refresh a one-time token session
+// @Tags OAuth
+// @Accept json
+// @Produce json
+// @Param token query string true "One-time token" example("one-time-token-123")
+// @Param session query string true "Session ID" example("survey-session-456")
+// @Success 200 {object} OneTimeSessionResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 410 {object} ErrorResponse
+// @Router /oauth/verify [get]
+func (h *OAuthHandler) VerifyOneTimeToken(c *gin.Context) <span class="cov4" title="3">{
+        token := c.Query("token")
+        sessionID := c.Query("session")
+
+        if token == "" </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_token",
+                        Message: "Token is required",
+                })
+                return
+        }</span>
+
+        <span class="cov3" title="2">if sessionID == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_session",
+                        Message: "Session ID is required",
+                })
+                return
+        }</span>
+
+        // TODO: Implement one-time token verification with session refresh
+        // 1. Check if token exists and is valid
+        // 2. Verify session ID matches
+        // 3. Check if token has been used (max uses)
+        // 4. Check if token has expired
+        // 5. Update lastActivity timestamp (session refresh)
+        // 6. Check if session is still active (within refresh window)
+
+        // Mock validation - in real implementation, check against cache/database
+        <span class="cov3" title="2">if token != "one-time-token-123" || sessionID != "survey-session-456" </span><span class="cov1" title="1">{
+                c.JSON(http.StatusUnauthorized, ErrorResponse{
+                        Error:   "invalid_token",
+                        Message: "Invalid token or session combination",
+                })
+                return
+        }</span>
+
+        // Return session-specific user data with refresh info
+        <span class="cov1" title="1">response := OneTimeSessionResponse{
+                User: User{
+                        ID:       "anonymous-user-123",
+                        Email:    "anonymous@example.com",
+                        TenantID: "tenant-123",
+                        Roles: []Role{
+                                {ID: "role-anonymous", Name: "anonymous"},
+                        },
+                },
+                SessionID:     sessionID,
+                Token:         token,
+                IsValid:       true,
+                LastActivity:  "2025-06-25T18:30:00Z",
+                RefreshWindow: 300,
+                Message:       "Session refreshed successfully. User is active.",
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// RefreshSession godoc
+// @Summary Refresh one-time session
+// @Description Keep session alive by refreshing activity timestamp
+// @Tags OAuth
+// @Accept json
+// @Produce json
+// @Param token query string true "One-time token" example("one-time-token-123")
+// @Param session query string true "Session ID" example("survey-session-456")
+// @Success 200 {object} OneTimeSessionResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 410 {object} ErrorResponse
+// @Router /oauth/refresh [post]
+func (h *OAuthHandler) RefreshSession(c *gin.Context) <span class="cov3" title="2">{
+        token := c.Query("token")
+        sessionID := c.Query("session")
+
+        if token == "" || sessionID == "" </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_parameters",
+                        Message: "Token and session ID are required",
+                })
+                return
+        }</span>
+
+        // TODO: Implement session refresh logic
+        // 1. Verify token is still valid
+        // 2. Update lastActivity timestamp
+        // 3. Check if session is within refresh window
+        // 4. Return updated session info
+
+        // Mock refresh - in real implementation, update cache/database
+        <span class="cov1" title="1">if token != "one-time-token-123" || sessionID != "survey-session-456" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, ErrorResponse{
+                        Error:   "invalid_token",
+                        Message: "Invalid token or session",
+                })
+                return
+        }</span>
+
+        <span class="cov1" title="1">response := OneTimeSessionResponse{
+                User: User{
+                        ID:       "anonymous-user-123",
+                        Email:    "anonymous@example.com",
+                        TenantID: "tenant-123",
+                        Roles: []Role{
+                                {ID: "role-anonymous", Name: "anonymous"},
+                        },
+                },
+                SessionID:     sessionID,
+                Token:         token,
+                IsValid:       true,
+                LastActivity:  "2025-06-25T18:35:00Z", // Updated timestamp
+                RefreshWindow: 300,
+                Message:       "Session refreshed successfully. User activity extended.",
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// OneTimeSessionResponse represents the one-time session verification response
+type OneTimeSessionResponse struct {
+        User          User   `json:"user"`
+        SessionID     string `json:"session_id" example:"survey-session-456"`
+        Token         string `json:"token" example:"one-time-token-123"`
+        IsValid       bool   `json:"is_valid" example:"true"`
+        LastActivity  string `json:"last_activity" example:"2025-06-25T18:30:00Z"`
+        RefreshWindow int    `json:"refresh_window" example:"300"`
+        Message       string `json:"message" example:"Session refreshed successfully"`
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package middleware
+
+import (
+        "auth-service/internal/service"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+// RBACMiddleware returns a Gin middleware that checks for required permission
+func RBACMiddleware(rbac service.RBACService, permission string) gin.HandlerFunc <span class="cov9" title="9">{
+        return func(c *gin.Context) </span><span class="cov10" title="11">{
+                userID := c.GetString("user_id")
+                tenantID := c.GetString("tenant_id")
+                if userID == "" || tenantID == "" </span><span class="cov3" title="2">{
+                        c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing user or tenant context"})
+                        return
+                }</span>
+                <span class="cov9" title="9">hasPerm, err := rbac.UserHasPermission(c.Request.Context(), userID, permission, tenantID)
+                if err != nil </span><span class="cov1" title="1">{
+                        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "permission check failed"})
+                        return
+                }</span>
+                <span class="cov8" title="8">if !hasPerm </span><span class="cov6" title="4">{
+                        c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+                        return
+                }</span>
+                <span class="cov6" title="4">c.Next()</span>
+        }
+}
+
+// For gRPC, similar interceptor logic would be used.
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
