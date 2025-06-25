@@ -1,14 +1,14 @@
 Test Summary Report
 ==================
-Date: Wed Jun 25 22:53:40 IST 2025
+Date: Wed Jun 25 23:44:11 IST 2025
 Go Version: 1.23.3
-Coverage: 84.7%
+Coverage: 82.0%
 
 Test Results:
 - Config tests: 19 passed
 - Handler tests: 54 passed
-- Middleware tests: 20 passed
-- Service tests: 42 passed
+- Middleware tests: 11 passed
+- Service tests: 19 passed
 - Model tests: 42 passed
 - Main tests: 43 passed
 

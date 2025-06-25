@@ -2,6 +2,7 @@ package rest
 
 import (
 	"auth-service/internal/config"
+	"auth-service/internal/middleware"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -47,6 +48,8 @@ func setupTestOAuthConfig() *config.Config {
 func TestOAuthHandler_GoogleLogin_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -73,6 +76,8 @@ func TestOAuthHandler_GoogleLogin_Success(t *testing.T) {
 func TestOAuthHandler_GoogleLogin_WithCustomRedirectURI(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -97,6 +102,8 @@ func TestOAuthHandler_GoogleLogin_WithCustomRedirectURI(t *testing.T) {
 func TestOAuthHandler_GoogleLogin_MissingTenantID(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -121,6 +128,8 @@ func TestOAuthHandler_GoogleLogin_MissingTenantID(t *testing.T) {
 func TestOAuthHandler_GoogleCallback_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -149,6 +158,8 @@ func TestOAuthHandler_GoogleCallback_Success(t *testing.T) {
 func TestOAuthHandler_GoogleCallback_MissingCode(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -173,6 +184,8 @@ func TestOAuthHandler_GoogleCallback_MissingCode(t *testing.T) {
 func TestOAuthHandler_GoogleCallback_OAuthError(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -197,6 +210,8 @@ func TestOAuthHandler_GoogleCallback_OAuthError(t *testing.T) {
 func TestOAuthHandler_ClientCredentials_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -234,6 +249,8 @@ func TestOAuthHandler_ClientCredentials_Success(t *testing.T) {
 func TestOAuthHandler_ClientCredentials_UnsupportedGrantType(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -269,6 +286,8 @@ func TestOAuthHandler_ClientCredentials_UnsupportedGrantType(t *testing.T) {
 func TestOAuthHandler_ClientCredentials_InvalidJSON(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -296,6 +315,8 @@ func TestOAuthHandler_ClientCredentials_InvalidJSON(t *testing.T) {
 func TestOAuthHandler_CreateOneTimeToken_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -340,6 +361,8 @@ func TestOAuthHandler_CreateOneTimeToken_Success(t *testing.T) {
 func TestOAuthHandler_CreateOneTimeToken_MissingURL(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -374,6 +397,8 @@ func TestOAuthHandler_CreateOneTimeToken_MissingURL(t *testing.T) {
 func TestOAuthHandler_VerifyOneTimeToken_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -402,6 +427,8 @@ func TestOAuthHandler_VerifyOneTimeToken_Success(t *testing.T) {
 func TestOAuthHandler_VerifyOneTimeToken_MissingToken(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -426,6 +453,8 @@ func TestOAuthHandler_VerifyOneTimeToken_MissingToken(t *testing.T) {
 func TestOAuthHandler_VerifyOneTimeToken_InvalidToken(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -450,6 +479,8 @@ func TestOAuthHandler_VerifyOneTimeToken_InvalidToken(t *testing.T) {
 func TestOAuthHandler_RefreshSession_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -478,6 +509,8 @@ func TestOAuthHandler_RefreshSession_Success(t *testing.T) {
 func TestOAuthHandler_RefreshSession_MissingSessionID(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -511,6 +544,8 @@ func TestOAuthHandler_NewOAuthHandler(t *testing.T) {
 func TestOAuthHandler_CreateOneTimeToken_WithAllFields(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -552,6 +587,8 @@ func TestOAuthHandler_CreateOneTimeToken_WithAllFields(t *testing.T) {
 func TestOAuthHandler_CreateOneTimeToken_WithDefaultValues(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -587,6 +624,8 @@ func TestOAuthHandler_CreateOneTimeToken_WithDefaultValues(t *testing.T) {
 func TestOAuthHandler_CreateOneTimeToken_WithInvalidJSON(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -612,6 +651,8 @@ func TestOAuthHandler_CreateOneTimeToken_WithInvalidJSON(t *testing.T) {
 func TestOAuthHandler_CreateOneTimeToken_WithEmptyBody(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -637,6 +678,8 @@ func TestOAuthHandler_CreateOneTimeToken_WithEmptyBody(t *testing.T) {
 func TestOAuthHandler_VerifyOneTimeToken_WithAllFields(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -667,6 +710,8 @@ func TestOAuthHandler_VerifyOneTimeToken_WithAllFields(t *testing.T) {
 func TestOAuthHandler_VerifyOneTimeToken_WithMissingSessionID(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -692,6 +737,8 @@ func TestOAuthHandler_VerifyOneTimeToken_WithMissingSessionID(t *testing.T) {
 func TestOAuthHandler_VerifyOneTimeToken_WithInvalidToken(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -717,6 +764,8 @@ func TestOAuthHandler_VerifyOneTimeToken_WithInvalidToken(t *testing.T) {
 func TestOAuthHandler_RefreshSession_WithAllFields(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -747,6 +796,8 @@ func TestOAuthHandler_RefreshSession_WithAllFields(t *testing.T) {
 func TestOAuthHandler_RefreshSession_WithInvalidJSON(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -772,6 +823,8 @@ func TestOAuthHandler_RefreshSession_WithInvalidJSON(t *testing.T) {
 func TestOAuthHandler_RefreshSession_WithEmptyBody(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -797,6 +850,8 @@ func TestOAuthHandler_RefreshSession_WithEmptyBody(t *testing.T) {
 func TestOAuthHandler_ClientCredentials_WithScope(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -833,6 +888,8 @@ func TestOAuthHandler_ClientCredentials_WithScope(t *testing.T) {
 func TestOAuthHandler_ClientCredentials_WithoutScope(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -868,6 +925,8 @@ func TestOAuthHandler_ClientCredentials_WithoutScope(t *testing.T) {
 func TestOAuthHandler_ClientCredentials_WithEmptyScope(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -904,6 +963,8 @@ func TestOAuthHandler_ClientCredentials_WithEmptyScope(t *testing.T) {
 func TestOAuthHandler_GoogleLogin_WithEmptyRedirectURI(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -930,6 +991,8 @@ func TestOAuthHandler_GoogleLogin_WithEmptyRedirectURI(t *testing.T) {
 func TestOAuthHandler_GoogleCallback_WithEmptyState(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -958,6 +1021,8 @@ func TestOAuthHandler_GoogleCallback_WithEmptyState(t *testing.T) {
 func TestOAuthHandler_GoogleCallback_WithOnlyCode(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -985,6 +1050,8 @@ func TestOAuthHandler_GoogleCallback_WithOnlyCode(t *testing.T) {
 func TestOAuthHandler_GoogleCallback_WithOnlyError(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 
@@ -1010,6 +1077,8 @@ func TestOAuthHandler_GoogleCallback_WithOnlyError(t *testing.T) {
 func TestOAuthHandler_Integration(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
+	log := setupTestLogger()
+	router.Use(middleware.LoggingMiddleware(log))
 	cfg := setupTestOAuthConfig()
 	handler := NewOAuthHandler(cfg)
 

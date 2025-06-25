@@ -2,6 +2,8 @@ package rest
 
 import (
 	"auth-service/internal/config"
+	"auth-service/internal/logger"
+	"auth-service/internal/middleware"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -35,15 +37,42 @@ func setupTestConfig() *config.Config {
 			PasswordRequireNumbers: true,
 			PasswordRequireSpecial: true,
 		},
+		Logging: config.LoggingConfig{
+			Level:             "info",
+			Format:            "json",
+			Output:            "stdout",
+			IncludeCaller:     true,
+			IncludeStacktrace: true,
+		},
 	}
+}
+
+func setupTestLogger() *logger.Logger {
+	cfg := &config.LoggingConfig{
+		Level:             "info",
+		Format:            "json",
+		Output:            "stdout",
+		IncludeCaller:     true,
+		IncludeStacktrace: true,
+	}
+
+	log, err := logger.NewLogger(cfg)
+	if err != nil {
+		panic(err)
+	}
+	return log
 }
 
 func TestAuthHandler_Login_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/login", handler.Login)
 
 	// Test data
@@ -81,8 +110,12 @@ func TestAuthHandler_Login_InvalidEmail(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/login", handler.Login)
 
 	// Test data
@@ -115,8 +148,12 @@ func TestAuthHandler_Login_MissingFields(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/login", handler.Login)
 
 	// Test data - missing required fields
@@ -147,8 +184,12 @@ func TestAuthHandler_Register_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/register", handler.Register)
 
 	// Test data
@@ -185,8 +226,12 @@ func TestAuthHandler_Register_InvalidEmail(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/register", handler.Register)
 
 	// Test data
@@ -221,8 +266,12 @@ func TestAuthHandler_Register_MissingFields(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/register", handler.Register)
 
 	// Test data - missing required fields
@@ -253,8 +302,12 @@ func TestAuthHandler_RefreshToken_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/refresh", handler.RefreshToken)
 
 	// Test data
@@ -287,8 +340,12 @@ func TestAuthHandler_RefreshToken_MissingToken(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/refresh", handler.RefreshToken)
 
 	// Test data - missing refresh token
@@ -318,12 +375,17 @@ func TestAuthHandler_Logout_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/logout", handler.Logout)
 
 	// Execute
 	req := httptest.NewRequest("POST", "/logout", nil)
+	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -341,8 +403,12 @@ func TestAuthHandler_Login_InvalidJSON(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/login", handler.Login)
 
 	// Test data - invalid JSON
@@ -368,14 +434,18 @@ func TestAuthHandler_Register_EmptyPassword(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
 	cfg := setupTestConfig()
-	handler := NewAuthHandler(cfg)
+	log := setupTestLogger()
 
+	// Add logging middleware
+	router.Use(middleware.LoggingMiddleware(log))
+
+	handler := NewAuthHandler(cfg)
 	router.POST("/register", handler.Register)
 
 	// Test data
 	registerReq := RegisterRequest{
 		Email:     "test@example.com",
-		Password:  "",
+		Password:  "", // Empty password
 		TenantID:  "tenant-123",
 		FirstName: "John",
 		LastName:  "Doe",
@@ -397,6 +467,7 @@ func TestAuthHandler_Register_EmptyPassword(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "validation_error", response.Error)
+	assert.Contains(t, response.Message, "Password")
 }
 
 func TestAuthHandler_NewAuthHandler(t *testing.T) {

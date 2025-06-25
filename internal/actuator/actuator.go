@@ -1,14 +1,18 @@
 package actuator
 
 import (
+	"auth-service/internal/config"
+	"auth-service/internal/logger"
 	"net/http"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/heptiolabs/healthcheck"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 )
 
 // Actuator provides health checks, metrics, and operational endpoints
@@ -20,6 +24,10 @@ type Actuator struct {
 	requestCount    *prometheus.CounterVec
 	requestDuration *prometheus.HistogramVec
 	activeRequests  *prometheus.GaugeVec
+	logger          *logger.Logger
+	mu              sync.RWMutex
+	healthChecks    map[string]healthcheck.Check
+	readinessChecks map[string]healthcheck.Check
 }
 
 // AppInfo contains application metadata
@@ -35,6 +43,19 @@ type AppInfo struct {
 
 // NewActuator creates a new actuator instance
 func NewActuator(appInfo *AppInfo) *Actuator {
+	// Initialize logger for actuator
+	appLogger, err := logger.NewLogger(&config.LoggingConfig{
+		Level:             "info",
+		Format:            "json",
+		Output:            "stdout",
+		IncludeCaller:     true,
+		IncludeStacktrace: true,
+	})
+	if err != nil {
+		// Fallback to default logger if initialization fails
+		appLogger = &logger.Logger{}
+	}
+
 	registry := prometheus.NewRegistry()
 
 	// Create metrics
@@ -77,17 +98,22 @@ func NewActuator(appInfo *AppInfo) *Actuator {
 		requestCount:    requestCount,
 		requestDuration: requestDuration,
 		activeRequests:  activeRequests,
+		logger:          appLogger,
+		healthChecks:    make(map[string]healthcheck.Check),
+		readinessChecks: make(map[string]healthcheck.Check),
 	}
 }
 
 // RegisterHealthCheck registers a health check with a name
 func (a *Actuator) RegisterHealthCheck(name string, check healthcheck.Check) {
 	a.health.AddLivenessCheck(name, check)
+	a.logger.Info("Health check registered", zap.String("name", name))
 }
 
 // RegisterReadinessCheck registers a readiness check with a name
 func (a *Actuator) RegisterReadinessCheck(name string, check healthcheck.Check) {
 	a.health.AddReadinessCheck(name, check)
+	a.logger.Info("Readiness check registered", zap.String("name", name))
 }
 
 // RegisterRoutes registers all actuator endpoints
@@ -121,39 +147,68 @@ func (a *Actuator) RegisterRoutes(router *gin.Engine) {
 		actuator.GET("/loggers", a.Loggers)
 		actuator.POST("/loggers/:name", a.SetLoggerLevel)
 	}
+
+	a.logger.Info("Actuator routes registered", zap.String("base_path", "/actuator"))
 }
 
 // Health returns overall health status
 func (a *Actuator) Health(c *gin.Context) {
+	reqLogger := a.logger.WithRequest(c.Request)
+	reqLogger.Info("Health check request received")
+
 	// Use the healthcheck handler to get overall health
 	a.health.LiveEndpoint(c.Writer, c.Request)
+
+	reqLogger.BusinessEvent("health_check", "", "", map[string]interface{}{
+		"endpoint": "/actuator/health",
+	})
 }
 
 // Liveness returns liveness check status
 func (a *Actuator) Liveness(c *gin.Context) {
+	reqLogger := a.logger.WithRequest(c.Request)
+	reqLogger.Info("Liveness check request received")
+
 	a.health.LiveEndpoint(c.Writer, c.Request)
+
+	reqLogger.BusinessEvent("liveness_check", "", "", map[string]interface{}{
+		"endpoint": "/actuator/health/live",
+	})
 }
 
 // Readiness returns readiness check status
 func (a *Actuator) Readiness(c *gin.Context) {
+	reqLogger := a.logger.WithRequest(c.Request)
+	reqLogger.Info("Readiness check request received")
+
 	a.health.ReadyEndpoint(c.Writer, c.Request)
+
+	reqLogger.BusinessEvent("readiness_check", "", "", map[string]interface{}{
+		"endpoint": "/actuator/health/ready",
+	})
 }
 
 // Info returns application information
 func (a *Actuator) Info(c *gin.Context) {
+	reqLogger := a.logger.WithRequest(c.Request)
+	reqLogger.Info("Application info request received")
+
 	c.JSON(http.StatusOK, a.appInfo)
 }
 
 // Environment returns environment information
 func (a *Actuator) Environment(c *gin.Context) {
+	reqLogger := a.logger.WithRequest(c.Request)
+	reqLogger.Info("Environment info request received")
+
 	env := gin.H{
-		"goVersion":    runtime.Version(),
-		"os":           runtime.GOOS,
-		"arch":         runtime.GOARCH,
-		"startTime":    a.startTime,
-		"uptime":       time.Since(a.startTime).String(),
-		"numCPU":       runtime.NumCPU(),
-		"numGoroutine": runtime.NumGoroutine(),
+		"environment": a.appInfo.Environment,
+		"properties":  a.appInfo.Properties,
+		"goVersion":   runtime.Version(),
+		"os":          runtime.GOOS,
+		"arch":        runtime.GOARCH,
+		"startTime":   a.startTime,
+		"uptime":      time.Since(a.startTime).String(),
 	}
 
 	c.JSON(http.StatusOK, env)
@@ -161,6 +216,9 @@ func (a *Actuator) Environment(c *gin.Context) {
 
 // Metrics returns application metrics
 func (a *Actuator) Metrics(c *gin.Context) {
+	reqLogger := a.logger.WithRequest(c.Request)
+	reqLogger.Info("Metrics request received")
+
 	metrics := gin.H{
 		"uptime":    time.Since(a.startTime).String(),
 		"memory":    a.getMemoryStats(),
@@ -169,13 +227,24 @@ func (a *Actuator) Metrics(c *gin.Context) {
 		"timestamp": time.Now(),
 	}
 
+	reqLogger.BusinessEvent("metrics_request", "", "", map[string]interface{}{
+		"endpoint": "/actuator/metrics",
+	})
+
 	c.JSON(http.StatusOK, metrics)
 }
 
 // PrometheusMetrics returns Prometheus-formatted metrics
 func (a *Actuator) PrometheusMetrics(c *gin.Context) {
+	reqLogger := a.logger.WithRequest(c.Request)
+	reqLogger.Info("Prometheus metrics request received")
+
 	handler := promhttp.HandlerFor(a.registry, promhttp.HandlerOpts{})
 	handler.ServeHTTP(c.Writer, c.Request)
+
+	reqLogger.BusinessEvent("prometheus_metrics_request", "", "", map[string]interface{}{
+		"endpoint": "/actuator/prometheus",
+	})
 }
 
 // Status returns application status

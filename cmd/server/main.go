@@ -9,11 +9,13 @@ import (
 	"auth-service/internal/actuator"
 	"auth-service/internal/config"
 	rest "auth-service/internal/handler/rest"
+	"auth-service/internal/logger"
 	"auth-service/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 
 	// Swagger documentation
 	_ "auth-service/docs"
@@ -83,6 +85,19 @@ func main() {
 
 	fmt.Printf("Loaded config: %+v\n", cfg.Server)
 
+	// Initialize logger
+	appLogger, err := logger.NewLogger(&cfg.Logging)
+	if err != nil {
+		log.Fatalf("failed to initialize logger: %v", err)
+	}
+
+	// Log application startup
+	appLogger.Info("Application starting",
+		zap.String("version", "1.0.0"),
+		zap.String("environment", "development"),
+		zap.Int("port", cfg.Server.Port),
+	)
+
 	// Create actuator
 	appInfo := &actuator.AppInfo{
 		Name:        "auth-service",
@@ -112,7 +127,10 @@ func main() {
 	// Set up Gin
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(gin.Recovery())
+
+	// Add logging middleware
+	r.Use(middleware.LoggingMiddleware(appLogger))
 
 	// Register actuator routes
 	act.RegisterRoutes(r)
@@ -154,7 +172,10 @@ func main() {
 	fmt.Printf("  Prometheus: http://%s/actuator/prometheus\n", addr)
 	fmt.Printf("  Info: http://%s/actuator/info\n", addr)
 
+	appLogger.Info("Server starting", zap.String("address", addr))
+
 	if err := r.Run(addr); err != nil {
+		appLogger.Error("Server failed to start", zap.Error(err))
 		log.Fatalf("failed to start server: %v", err)
 	}
 }
