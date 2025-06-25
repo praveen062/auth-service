@@ -121,9 +121,57 @@ func setupTestRouter() *gin.Engine {
 	return gin.New()
 }
 
+// Helper function to isolate environment variables for tests
+func isolateEnvVars(t *testing.T, testFunc func()) {
+	// Store original environment variables
+	originalVars := make(map[string]string)
+	envVars := []string{
+		"DB_HOST", "DB_PASSWORD", "JWT_SECRET", "SERVER_PORT", "DATABASE_HOST",
+		"DB_PORT", "DB_NAME", "DB_USER", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD",
+		"GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
+	}
+
+	for _, envVar := range envVars {
+		if value := os.Getenv(envVar); value != "" {
+			originalVars[envVar] = value
+		}
+	}
+
+	// Set test environment variables
+	os.Setenv("DB_HOST", "test-db-host")
+	os.Setenv("DB_PASSWORD", "test-db-password")
+	os.Setenv("JWT_SECRET", "test-jwt-secret")
+	os.Setenv("SERVER_PORT", "8080")
+	os.Setenv("DATABASE_HOST", "test-database-host")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("DB_NAME", "test-auth-service")
+	os.Setenv("DB_USER", "test-user")
+	os.Setenv("REDIS_HOST", "test-redis-host")
+	os.Setenv("REDIS_PORT", "6379")
+	os.Setenv("REDIS_PASSWORD", "test-redis-password")
+	os.Setenv("GOOGLE_CLIENT_ID", "test-google-client-id")
+	os.Setenv("GOOGLE_CLIENT_SECRET", "test-google-client-secret")
+
+	// Restore original values after test
+	defer func() {
+		// First, unset all test variables
+		for _, envVar := range envVars {
+			os.Unsetenv(envVar)
+		}
+		// Then restore original values
+		for envVar, value := range originalVars {
+			os.Setenv(envVar, value)
+		}
+	}()
+
+	// Run the test
+	testFunc()
+}
+
 func TestMain_LoadConfig_Success(t *testing.T) {
-	// Setup - create a temporary config file
-	configContent := `
+	isolateEnvVars(t, func() {
+		// Setup - create a temporary config file
+		configContent := `
 server:
   port: 8080
   host: "0.0.0.0"
@@ -144,25 +192,26 @@ jwt:
   expiration_hours: 24
 `
 
-	tmpFile, err := os.CreateTemp("", "test-config-*.yaml")
-	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+		tmpFile, err := os.CreateTemp("", "test-config-*.yaml")
+		require.NoError(t, err)
+		defer os.Remove(tmpFile.Name())
 
-	_, err = tmpFile.WriteString(configContent)
-	require.NoError(t, err)
-	tmpFile.Close()
+		_, err = tmpFile.WriteString(configContent)
+		require.NoError(t, err)
+		tmpFile.Close()
 
-	// Execute
-	cfg, err := config.LoadConfig(tmpFile.Name())
+		// Execute
+		cfg, err := config.LoadConfig(tmpFile.Name())
 
-	// Assert
-	require.NoError(t, err)
-	assert.NotNil(t, cfg)
-	assert.Equal(t, 8080, cfg.Server.Port)
-	assert.Equal(t, "0.0.0.0", cfg.Server.Host)
-	assert.Equal(t, "test-db-host", cfg.Database.Host)
-	assert.Equal(t, "test-google-client-id", cfg.OAuth.Google.ClientID)
-	assert.Equal(t, "test-jwt-secret", cfg.JWT.Secret)
+		// Assert
+		require.NoError(t, err)
+		assert.NotNil(t, cfg)
+		assert.Equal(t, 8080, cfg.Server.Port)
+		assert.Equal(t, "0.0.0.0", cfg.Server.Host)
+		assert.Equal(t, "test-db-host", cfg.Database.Host)
+		assert.Equal(t, "test-google-client-id", cfg.OAuth.Google.ClientID)
+		assert.Equal(t, "test-jwt-secret", cfg.JWT.Secret)
+	})
 }
 
 func TestMain_LoadConfig_FileNotFound(t *testing.T) {

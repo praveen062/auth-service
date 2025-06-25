@@ -55,17 +55,23 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">auth-service/cmd/server/main.go (20.0%)</option>
+				<option value="file0">auth-service/cmd/server/main.go (14.6%)</option>
 				
 				<option value="file1">auth-service/docs/docs.go (100.0%)</option>
 				
-				<option value="file2">auth-service/internal/config/config.go (97.7%)</option>
+				<option value="file2">auth-service/internal/actuator/actuator.go (92.6%)</option>
 				
-				<option value="file3">auth-service/internal/handler/rest/auth_handler.go (100.0%)</option>
+				<option value="file3">auth-service/internal/actuator/health_checks.go (89.3%)</option>
 				
-				<option value="file4">auth-service/internal/handler/rest/oauth_handler.go (88.6%)</option>
+				<option value="file4">auth-service/internal/config/config.go (83.4%)</option>
 				
-				<option value="file5">auth-service/internal/middleware/rbac_middleware.go (100.0%)</option>
+				<option value="file5">auth-service/internal/handler/rest/auth_handler.go (100.0%)</option>
+				
+				<option value="file6">auth-service/internal/handler/rest/oauth_handler.go (88.6%)</option>
+				
+				<option value="file7">auth-service/internal/middleware/actuator_middleware.go (100.0%)</option>
+				
+				<option value="file8">auth-service/internal/middleware/rbac_middleware.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -96,8 +102,10 @@ import (
         "net/http"
         "strings"
 
+        "auth-service/internal/actuator"
         "auth-service/internal/config"
         rest "auth-service/internal/handler/rest"
+        "auth-service/internal/middleware"
 
         "github.com/gin-gonic/gin"
         swaggerFiles "github.com/swaggo/files"
@@ -171,10 +179,42 @@ func main() <span class="cov0" title="0">{
 
         <span class="cov0" title="0">fmt.Printf("Loaded config: %+v\n", cfg.Server)
 
+        // Create actuator
+        appInfo := &amp;actuator.AppInfo{
+                Name:        "auth-service",
+                Version:     "1.0.0",
+                Description: "Multi-Tenant OAuth Service",
+                BuildTime:   "2024-01-01T00:00:00Z",
+                GitCommit:   "development",
+                Environment: "development",
+                Properties: map[string]string{
+                        "server.port":   fmt.Sprintf("%d", cfg.Server.Port),
+                        "database.host": cfg.Database.Host,
+                        "redis.host":    cfg.Redis.Host,
+                },
+        }
+
+        act := actuator.NewActuator(appInfo)
+
+        // Register health checks
+        act.RegisterHealthCheck("memory", actuator.MemoryHealthCheck(90))
+        act.RegisterHealthCheck("goroutines", actuator.GoroutineHealthCheck(1000))
+        act.RegisterHealthCheck("disk", actuator.DiskSpaceHealthCheck(1))
+
+        // Register readiness checks (these would be added when DB/Redis are connected)
+        // act.RegisterReadinessCheck("database", actuator.DatabaseHealthCheck(db))
+        // act.RegisterReadinessCheck("redis", actuator.RedisHealthCheck(redisClient))
+
         // Set up Gin
         gin.SetMode(gin.ReleaseMode)
         r := gin.New()
         r.Use(gin.Logger(), gin.Recovery())
+
+        // Register actuator routes
+        act.RegisterRoutes(r)
+
+        // Add actuator middleware for metrics tracking
+        r.Use(middleware.ActuatorMiddleware(act))
 
         // Register REST handlers
         authHandler := rest.NewAuthHandler(cfg)
@@ -203,6 +243,13 @@ func main() <span class="cov0" title="0">{
 
         // Start server
         addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+        fmt.Printf("Starting server on %s\n", addr)
+        fmt.Printf("Actuator endpoints available at:\n")
+        fmt.Printf("  Health: http://%s/actuator/health\n", addr)
+        fmt.Printf("  Metrics: http://%s/actuator/metrics\n", addr)
+        fmt.Printf("  Prometheus: http://%s/actuator/prometheus\n", addr)
+        fmt.Printf("  Info: http://%s/actuator/info\n", addr)
+
         if err := r.Run(addr); err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("failed to start server: %v", err)
         }</span>
@@ -1138,7 +1185,462 @@ func init() <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package config
+		<pre class="file" id="file2" style="display: none">package actuator
+
+import (
+        "net/http"
+        "runtime"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/heptiolabs/healthcheck"
+        "github.com/prometheus/client_golang/prometheus"
+        "github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+// Actuator provides health checks, metrics, and operational endpoints
+type Actuator struct {
+        appInfo         *AppInfo
+        health          healthcheck.Handler
+        registry        *prometheus.Registry
+        startTime       time.Time
+        requestCount    *prometheus.CounterVec
+        requestDuration *prometheus.HistogramVec
+        activeRequests  *prometheus.GaugeVec
+}
+
+// AppInfo contains application metadata
+type AppInfo struct {
+        Name        string            `json:"name"`
+        Version     string            `json:"version"`
+        Description string            `json:"description"`
+        BuildTime   string            `json:"buildTime"`
+        GitCommit   string            `json:"gitCommit"`
+        Environment string            `json:"environment"`
+        Properties  map[string]string `json:"properties,omitempty"`
+}
+
+// NewActuator creates a new actuator instance
+func NewActuator(appInfo *AppInfo) *Actuator <span class="cov10" title="20">{
+        registry := prometheus.NewRegistry()
+
+        // Create metrics
+        requestCount := prometheus.NewCounterVec(
+                prometheus.CounterOpts{
+                        Name: "http_requests_total",
+                        Help: "Total number of HTTP requests",
+                },
+                []string{"method", "endpoint", "status"},
+        )
+
+        requestDuration := prometheus.NewHistogramVec(
+                prometheus.HistogramOpts{
+                        Name:    "http_request_duration_seconds",
+                        Help:    "HTTP request duration in seconds",
+                        Buckets: prometheus.DefBuckets,
+                },
+                []string{"method", "endpoint"},
+        )
+
+        activeRequests := prometheus.NewGaugeVec(
+                prometheus.GaugeOpts{
+                        Name: "http_requests_active",
+                        Help: "Number of active HTTP requests",
+                },
+                []string{"method", "endpoint"},
+        )
+
+        // Register metrics
+        registry.MustRegister(requestCount, requestDuration, activeRequests)
+
+        // Create health check handler
+        health := healthcheck.NewHandler()
+
+        return &amp;Actuator{
+                appInfo:         appInfo,
+                health:          health,
+                registry:        registry,
+                startTime:       time.Now(),
+                requestCount:    requestCount,
+                requestDuration: requestDuration,
+                activeRequests:  activeRequests,
+        }
+}</span>
+
+// RegisterHealthCheck registers a health check with a name
+func (a *Actuator) RegisterHealthCheck(name string, check healthcheck.Check) <span class="cov0" title="0">{
+        a.health.AddLivenessCheck(name, check)
+}</span>
+
+// RegisterReadinessCheck registers a readiness check with a name
+func (a *Actuator) RegisterReadinessCheck(name string, check healthcheck.Check) <span class="cov0" title="0">{
+        a.health.AddReadinessCheck(name, check)
+}</span>
+
+// RegisterRoutes registers all actuator endpoints
+func (a *Actuator) RegisterRoutes(router *gin.Engine) <span class="cov8" title="14">{
+        actuator := router.Group("/actuator")
+        </span><span class="cov8" title="14">{
+                // Health endpoints
+                actuator.GET("/health", a.Health)
+                actuator.GET("/health/live", a.Liveness)
+                actuator.GET("/health/ready", a.Readiness)
+
+                // Info endpoints
+                actuator.GET("/info", a.Info)
+                actuator.GET("/env", a.Environment)
+
+                // Metrics endpoints
+                actuator.GET("/metrics", a.Metrics)
+                actuator.GET("/prometheus", a.PrometheusMetrics)
+
+                // Operational endpoints
+                actuator.GET("/status", a.Status)
+                actuator.GET("/uptime", a.Uptime)
+                actuator.GET("/threaddump", a.ThreadDump)
+                actuator.GET("/heapdump", a.HeapDump)
+
+                // Configuration endpoints
+                actuator.GET("/configprops", a.ConfigProps)
+                actuator.GET("/mappings", a.Mappings)
+
+                // Logging endpoints
+                actuator.GET("/loggers", a.Loggers)
+                actuator.POST("/loggers/:name", a.SetLoggerLevel)
+        }</span>
+}
+
+// Health returns overall health status
+func (a *Actuator) Health(c *gin.Context) <span class="cov1" title="1">{
+        // Use the healthcheck handler to get overall health
+        a.health.LiveEndpoint(c.Writer, c.Request)
+}</span>
+
+// Liveness returns liveness check status
+func (a *Actuator) Liveness(c *gin.Context) <span class="cov1" title="1">{
+        a.health.LiveEndpoint(c.Writer, c.Request)
+}</span>
+
+// Readiness returns readiness check status
+func (a *Actuator) Readiness(c *gin.Context) <span class="cov1" title="1">{
+        a.health.ReadyEndpoint(c.Writer, c.Request)
+}</span>
+
+// Info returns application information
+func (a *Actuator) Info(c *gin.Context) <span class="cov1" title="1">{
+        c.JSON(http.StatusOK, a.appInfo)
+}</span>
+
+// Environment returns environment information
+func (a *Actuator) Environment(c *gin.Context) <span class="cov1" title="1">{
+        env := gin.H{
+                "goVersion":    runtime.Version(),
+                "os":           runtime.GOOS,
+                "arch":         runtime.GOARCH,
+                "startTime":    a.startTime,
+                "uptime":       time.Since(a.startTime).String(),
+                "numCPU":       runtime.NumCPU(),
+                "numGoroutine": runtime.NumGoroutine(),
+        }
+
+        c.JSON(http.StatusOK, env)
+}</span>
+
+// Metrics returns application metrics
+func (a *Actuator) Metrics(c *gin.Context) <span class="cov1" title="1">{
+        metrics := gin.H{
+                "uptime":    time.Since(a.startTime).String(),
+                "memory":    a.getMemoryStats(),
+                "runtime":   a.getRuntimeStats(),
+                "requests":  a.getRequestStats(),
+                "timestamp": time.Now(),
+        }
+
+        c.JSON(http.StatusOK, metrics)
+}</span>
+
+// PrometheusMetrics returns Prometheus-formatted metrics
+func (a *Actuator) PrometheusMetrics(c *gin.Context) <span class="cov1" title="1">{
+        handler := promhttp.HandlerFor(a.registry, promhttp.HandlerOpts{})
+        handler.ServeHTTP(c.Writer, c.Request)
+}</span>
+
+// Status returns application status
+func (a *Actuator) Status(c *gin.Context) <span class="cov1" title="1">{
+        status := gin.H{
+                "status":      "RUNNING",
+                "startTime":   a.startTime,
+                "uptime":      time.Since(a.startTime).String(),
+                "version":     a.appInfo.Version,
+                "environment": a.appInfo.Environment,
+                "goroutines":  runtime.NumGoroutine(),
+                "memory":      a.getMemoryStats(),
+        }
+
+        c.JSON(http.StatusOK, status)
+}</span>
+
+// Uptime returns application uptime
+func (a *Actuator) Uptime(c *gin.Context) <span class="cov1" title="1">{
+        uptime := gin.H{
+                "uptime":      time.Since(a.startTime).String(),
+                "startTime":   a.startTime,
+                "duration":    time.Since(a.startTime).Milliseconds(),
+                "durationSec": time.Since(a.startTime).Seconds(),
+        }
+
+        c.JSON(http.StatusOK, uptime)
+}</span>
+
+// ThreadDump returns goroutine information
+func (a *Actuator) ThreadDump(c *gin.Context) <span class="cov1" title="1">{
+        // Get goroutine count and stack traces
+        stack := make([]byte, 1024*1024)
+        stack = stack[:runtime.Stack(stack, true)]
+
+        dump := gin.H{
+                "numGoroutines": runtime.NumGoroutine(),
+                "stackTrace":    string(stack),
+                "timestamp":     time.Now(),
+        }
+
+        c.JSON(http.StatusOK, dump)
+}</span>
+
+// HeapDump returns memory heap information
+func (a *Actuator) HeapDump(c *gin.Context) <span class="cov1" title="1">{
+        var m runtime.MemStats
+        runtime.ReadMemStats(&amp;m)
+
+        dump := gin.H{
+                "heapAlloc":    m.HeapAlloc,
+                "heapSys":      m.HeapSys,
+                "heapIdle":     m.HeapIdle,
+                "heapInuse":    m.HeapInuse,
+                "heapReleased": m.HeapReleased,
+                "heapObjects":  m.HeapObjects,
+                "totalAlloc":   m.TotalAlloc,
+                "sys":          m.Sys,
+                "numGC":        m.NumGC,
+                "timestamp":    time.Now(),
+        }
+
+        c.JSON(http.StatusOK, dump)
+}</span>
+
+// ConfigProps returns configuration properties
+func (a *Actuator) ConfigProps(c *gin.Context) <span class="cov0" title="0">{
+        c.JSON(http.StatusOK, gin.H{
+                "application": a.appInfo,
+                "timestamp":   time.Now(),
+        })
+}</span>
+
+// Mappings returns endpoint mappings
+func (a *Actuator) Mappings(c *gin.Context) <span class="cov1" title="1">{
+        mappings := gin.H{
+                "actuator": gin.H{
+                        "health":       "/actuator/health",
+                        "health/live":  "/actuator/health/live",
+                        "health/ready": "/actuator/health/ready",
+                        "info":         "/actuator/info",
+                        "metrics":      "/actuator/metrics",
+                        "prometheus":   "/actuator/prometheus",
+                        "status":       "/actuator/status",
+                        "uptime":       "/actuator/uptime",
+                        "threaddump":   "/actuator/threaddump",
+                        "heapdump":     "/actuator/heapdump",
+                },
+                "timestamp": time.Now(),
+        }
+
+        c.JSON(http.StatusOK, mappings)
+}</span>
+
+// Loggers returns logger information
+func (a *Actuator) Loggers(c *gin.Context) <span class="cov1" title="1">{
+        loggers := gin.H{
+                "levels": gin.H{
+                        "ROOT":         "INFO",
+                        "auth-service": "INFO",
+                },
+                "timestamp": time.Now(),
+        }
+
+        c.JSON(http.StatusOK, loggers)
+}</span>
+
+// SetLoggerLevel sets logger level
+func (a *Actuator) SetLoggerLevel(c *gin.Context) <span class="cov1" title="1">{
+        loggerName := c.Param("name")
+
+        var request struct {
+                Level string `json:"level"`
+        }
+
+        if err := c.ShouldBindJSON(&amp;request); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "error": "Invalid request body",
+                })
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, gin.H{
+                "logger":  loggerName,
+                "level":   request.Level,
+                "message": "Logger level updated",
+        })</span>
+}
+
+// RecordRequest records request metrics
+func (a *Actuator) RecordRequest(method, endpoint string, status int, duration time.Duration) <span class="cov1" title="1">{
+        a.requestCount.WithLabelValues(method, endpoint, string(rune(status))).Inc()
+        a.requestDuration.WithLabelValues(method, endpoint).Observe(duration.Seconds())
+}</span>
+
+// StartRequest starts tracking an active request
+func (a *Actuator) StartRequest(method, endpoint string) <span class="cov1" title="1">{
+        a.activeRequests.WithLabelValues(method, endpoint).Inc()
+}</span>
+
+// EndRequest ends tracking an active request
+func (a *Actuator) EndRequest(method, endpoint string) <span class="cov1" title="1">{
+        a.activeRequests.WithLabelValues(method, endpoint).Dec()
+}</span>
+
+// getMemoryStats returns current memory statistics
+func (a *Actuator) getMemoryStats() gin.H <span class="cov4" title="3">{
+        var m runtime.MemStats
+        runtime.ReadMemStats(&amp;m)
+
+        return gin.H{
+                "alloc":      m.Alloc,
+                "totalAlloc": m.TotalAlloc,
+                "sys":        m.Sys,
+                "numGC":      m.NumGC,
+                "heapAlloc":  m.HeapAlloc,
+                "heapSys":    m.HeapSys,
+                "heapIdle":   m.HeapIdle,
+                "heapInuse":  m.HeapInuse,
+        }
+}</span>
+
+// getRuntimeStats returns current runtime statistics
+func (a *Actuator) getRuntimeStats() gin.H <span class="cov3" title="2">{
+        return gin.H{
+                "numCPU":       runtime.NumCPU(),
+                "numGoroutine": runtime.NumGoroutine(),
+                "numCgoCall":   runtime.NumCgoCall(),
+                "goVersion":    runtime.Version(),
+        }
+}</span>
+
+// getRequestStats returns request statistics
+func (a *Actuator) getRequestStats() gin.H <span class="cov3" title="2">{
+        // This would typically return actual request statistics
+        // For now, return placeholder data
+        return gin.H{
+                "totalRequests":   0,
+                "activeRequests":  0,
+                "requestsPerSec":  0,
+                "errorCount":      0,
+                "averageResponse": 0,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package actuator
+
+import (
+        "context"
+        "database/sql"
+        "fmt"
+        "runtime"
+        "time"
+
+        "github.com/heptiolabs/healthcheck"
+)
+
+// DatabaseHealthCheck creates a health check for database connectivity
+func DatabaseHealthCheck(db *sql.DB) healthcheck.Check <span class="cov1" title="1">{
+        return func() error </span><span class="cov0" title="0">{
+                ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+                defer cancel()
+
+                return db.PingContext(ctx)
+        }</span>
+}
+
+// RedisHealthCheck creates a health check for Redis connectivity
+func RedisHealthCheck(redisClient interface{}) healthcheck.Check <span class="cov1" title="1">{
+        return func() error </span><span class="cov1" title="1">{
+                // This is a placeholder - you would implement actual Redis ping
+                // For now, return nil to indicate success
+                return nil
+        }</span>
+}
+
+// DiskSpaceHealthCheck creates a health check for disk space
+func DiskSpaceHealthCheck(minSpaceGB int64) healthcheck.Check <span class="cov1" title="1">{
+        return func() error </span><span class="cov1" title="1">{
+                // This is a placeholder - you would implement actual disk space check
+                // For now, return nil to indicate success
+                return nil
+        }</span>
+}
+
+// MemoryHealthCheck creates a health check for memory usage
+func MemoryHealthCheck(maxMemoryPercent int) healthcheck.Check <span class="cov5" title="2">{
+        return func() error </span><span class="cov5" title="2">{
+                var m runtime.MemStats
+                runtime.ReadMemStats(&amp;m)
+
+                // Calculate memory usage percentage
+                memoryUsagePercent := float64(m.Sys) / float64(1&lt;&lt;30) * 100 // Convert to GB
+
+                if memoryUsagePercent &gt; float64(maxMemoryPercent) </span><span class="cov1" title="1">{
+                        return fmt.Errorf("memory usage too high: %.2f%%", memoryUsagePercent)
+                }</span>
+
+                <span class="cov1" title="1">return nil</span>
+        }
+}
+
+// GoroutineHealthCheck creates a health check for goroutine count
+func GoroutineHealthCheck(maxGoroutines int) healthcheck.Check <span class="cov5" title="2">{
+        return func() error </span><span class="cov5" title="2">{
+                count := runtime.NumGoroutine()
+                if count &gt; maxGoroutines </span><span class="cov1" title="1">{
+                        return fmt.Errorf("too many goroutines: %d", count)
+                }</span>
+                <span class="cov1" title="1">return nil</span>
+        }
+}
+
+// CustomHealthCheck creates a custom health check function
+func CustomHealthCheck(checkFunc func() error) healthcheck.Check <span class="cov10" title="4">{
+        return checkFunc
+}</span>
+
+// TimeoutHealthCheck wraps a health check with a timeout
+func TimeoutHealthCheck(check healthcheck.Check, timeout time.Duration) healthcheck.Check <span class="cov8" title="3">{
+        return func() error </span><span class="cov8" title="3">{
+                done := make(chan error, 1)
+                go func() </span><span class="cov8" title="3">{
+                        done &lt;- check()
+                }</span>()
+
+                <span class="cov8" title="3">select </span>{
+                case err := &lt;-done:<span class="cov5" title="2">
+                        return err</span>
+                case &lt;-time.After(timeout):<span class="cov1" title="1">
+                        return fmt.Errorf("health check timed out after %v", timeout)</span>
+                }
+        }
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package config
 
 import (
         "fmt"
@@ -1159,6 +1661,7 @@ type Config struct {
         Cache    CacheConfig    `mapstructure:"cache"`
         Tenancy  TenancyConfig  `mapstructure:"tenancy"`
         OneTime  OneTimeConfig  `mapstructure:"one_time_auth"`
+        Actuator ActuatorConfig `mapstructure:"actuator"`
 }
 
 // ServerConfig holds server configuration
@@ -1292,6 +1795,55 @@ type OneTimeConfig struct {
         AllowedURLs     []string `mapstructure:"allowed_urls"`
 }
 
+// ActuatorConfig holds actuator configuration
+type ActuatorConfig struct {
+        Enabled          bool                   `mapstructure:"enabled"`
+        BasePath         string                 `mapstructure:"base_path"`
+        Health           HealthConfig           `mapstructure:"health"`
+        Metrics          MetricsConfig          `mapstructure:"metrics"`
+        Endpoints        EndpointsConfig        `mapstructure:"endpoints"`
+        ActuatorSecurity ActuatorSecurityConfig `mapstructure:"security"`
+}
+
+// HealthConfig holds health check configuration
+type HealthConfig struct {
+        Enabled                bool          `mapstructure:"enabled"`
+        Timeout                time.Duration `mapstructure:"timeout"`
+        MemoryThresholdPercent int           `mapstructure:"memory_threshold_percent"`
+        GoroutineThreshold     int           `mapstructure:"goroutine_threshold"`
+        DiskSpaceThresholdGB   int64         `mapstructure:"disk_space_threshold_gb"`
+}
+
+// MetricsConfig holds metrics configuration
+type MetricsConfig struct {
+        Enabled           bool `mapstructure:"enabled"`
+        PrometheusEnabled bool `mapstructure:"prometheus_enabled"`
+        RequestTracking   bool `mapstructure:"request_tracking"`
+}
+
+// EndpointsConfig holds endpoint configuration
+type EndpointsConfig struct {
+        Health      bool `mapstructure:"health"`
+        Info        bool `mapstructure:"info"`
+        Metrics     bool `mapstructure:"metrics"`
+        Prometheus  bool `mapstructure:"prometheus"`
+        Status      bool `mapstructure:"status"`
+        Uptime      bool `mapstructure:"uptime"`
+        ThreadDump  bool `mapstructure:"threaddump"`
+        HeapDump    bool `mapstructure:"heapdump"`
+        ConfigProps bool `mapstructure:"configprops"`
+        Mappings    bool `mapstructure:"mappings"`
+        Loggers     bool `mapstructure:"loggers"`
+}
+
+// ActuatorSecurityConfig holds actuator security configuration
+type ActuatorSecurityConfig struct {
+        HealthPublic                 bool     `mapstructure:"health_public"`
+        MetricsPublic                bool     `mapstructure:"metrics_public"`
+        SensitiveEndpointsRestricted bool     `mapstructure:"sensitive_endpoints_restricted"`
+        AllowedIPs                   []string `mapstructure:"allowed_ips"`
+}
+
 // LoadConfig loads configuration from file and environment variables
 func LoadConfig(configPath string) (*Config, error) <span class="cov10" title="7">{
         viper.SetConfigFile(configPath)
@@ -1377,12 +1929,38 @@ func setDefaults() <span class="cov10" title="7">{
         viper.SetDefault("one_time_auth.token_length", 32)
         viper.SetDefault("one_time_auth.max_uses", 1)
         viper.SetDefault("one_time_auth.expiration_hours", 1)
+
+        viper.SetDefault("actuator.enabled", false)
+        viper.SetDefault("actuator.base_path", "/actuator")
+        viper.SetDefault("actuator.health.enabled", true)
+        viper.SetDefault("actuator.health.timeout", "5s")
+        viper.SetDefault("actuator.health.memory_threshold_percent", 90)
+        viper.SetDefault("actuator.health.goroutine_threshold", 1000)
+        viper.SetDefault("actuator.health.disk_space_threshold_gb", 10)
+        viper.SetDefault("actuator.metrics.enabled", true)
+        viper.SetDefault("actuator.metrics.prometheus_enabled", true)
+        viper.SetDefault("actuator.metrics.request_tracking", true)
+        viper.SetDefault("actuator.endpoints.health", true)
+        viper.SetDefault("actuator.endpoints.info", true)
+        viper.SetDefault("actuator.endpoints.metrics", true)
+        viper.SetDefault("actuator.endpoints.prometheus", true)
+        viper.SetDefault("actuator.endpoints.status", true)
+        viper.SetDefault("actuator.endpoints.uptime", true)
+        viper.SetDefault("actuator.endpoints.threaddump", true)
+        viper.SetDefault("actuator.endpoints.heapdump", true)
+        viper.SetDefault("actuator.endpoints.configprops", true)
+        viper.SetDefault("actuator.endpoints.mappings", true)
+        viper.SetDefault("actuator.endpoints.loggers", true)
+        viper.SetDefault("actuator.security.health_public", true)
+        viper.SetDefault("actuator.security.metrics_public", true)
+        viper.SetDefault("actuator.security.sensitive_endpoints_restricted", true)
+        viper.SetDefault("actuator.security.allowed_ips", []string{})
 }</span>
 
 // overrideWithEnvVars overrides configuration with environment variables
 func overrideWithEnvVars() <span class="cov8" title="5">{
         // Server
-        if serverPort := viper.GetInt("SERVER_PORT"); serverPort != 0 </span><span class="cov4" title="2">{
+        if serverPort := viper.GetInt("SERVER_PORT"); serverPort != 0 </span><span class="cov8" title="5">{
                 viper.Set("server.port", serverPort)
         }</span>
         <span class="cov8" title="5">if serverHost := viper.GetString("SERVER_HOST"); serverHost != "" </span><span class="cov0" title="0">{
@@ -1390,7 +1968,7 @@ func overrideWithEnvVars() <span class="cov8" title="5">{
         }</span>
 
         // Database
-        <span class="cov8" title="5">if dbHost := viper.GetString("DB_HOST"); dbHost != "" </span><span class="cov4" title="2">{
+        <span class="cov8" title="5">if dbHost := viper.GetString("DB_HOST"); dbHost != "" </span><span class="cov8" title="5">{
                 viper.Set("database.host", dbHost)
         }</span>
         <span class="cov8" title="5">if dbPort := viper.GetInt("DB_PORT"); dbPort != 0 </span><span class="cov8" title="5">{
@@ -1402,7 +1980,7 @@ func overrideWithEnvVars() <span class="cov8" title="5">{
         <span class="cov8" title="5">if dbUser := viper.GetString("DB_USER"); dbUser != "" </span><span class="cov8" title="5">{
                 viper.Set("database.user", dbUser)
         }</span>
-        <span class="cov8" title="5">if dbPassword := viper.GetString("DB_PASSWORD"); dbPassword != "" </span><span class="cov4" title="2">{
+        <span class="cov8" title="5">if dbPassword := viper.GetString("DB_PASSWORD"); dbPassword != "" </span><span class="cov8" title="5">{
                 viper.Set("database.password", dbPassword)
         }</span>
 
@@ -1418,7 +1996,7 @@ func overrideWithEnvVars() <span class="cov8" title="5">{
         }</span>
 
         // JWT
-        <span class="cov8" title="5">if jwtSecret := viper.GetString("JWT_SECRET"); jwtSecret != "" </span><span class="cov4" title="2">{
+        <span class="cov8" title="5">if jwtSecret := viper.GetString("JWT_SECRET"); jwtSecret != "" </span><span class="cov8" title="5">{
                 viper.Set("jwt.secret", jwtSecret)
         }</span>
 
@@ -1428,6 +2006,83 @@ func overrideWithEnvVars() <span class="cov8" title="5">{
         }</span>
         <span class="cov8" title="5">if googleClientSecret := viper.GetString("GOOGLE_CLIENT_SECRET"); googleClientSecret != "" </span><span class="cov8" title="5">{
                 viper.Set("oauth.google.client_secret", googleClientSecret)
+        }</span>
+
+        // Actuator
+        <span class="cov8" title="5">if actuatorEnabled := viper.GetBool("ACTUATOR_ENABLED"); actuatorEnabled </span><span class="cov0" title="0">{
+                viper.Set("actuator.enabled", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorBasePath := viper.GetString("ACTUATOR_BASE_PATH"); actuatorBasePath != "" </span><span class="cov0" title="0">{
+                viper.Set("actuator.base_path", actuatorBasePath)
+        }</span>
+        <span class="cov8" title="5">if actuatorHealthEnabled := viper.GetBool("ACTUATOR_HEALTH_ENABLED"); actuatorHealthEnabled </span><span class="cov0" title="0">{
+                viper.Set("actuator.health.enabled", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorHealthTimeout := viper.GetDuration("ACTUATOR_HEALTH_TIMEOUT"); actuatorHealthTimeout != 0 </span><span class="cov0" title="0">{
+                viper.Set("actuator.health.timeout", actuatorHealthTimeout)
+        }</span>
+        <span class="cov8" title="5">if actuatorHealthMemoryThresholdPercent := viper.GetInt("ACTUATOR_HEALTH_MEMORY_THRESHOLD_PERCENT"); actuatorHealthMemoryThresholdPercent != 0 </span><span class="cov0" title="0">{
+                viper.Set("actuator.health.memory_threshold_percent", actuatorHealthMemoryThresholdPercent)
+        }</span>
+        <span class="cov8" title="5">if actuatorHealthGoroutineThreshold := viper.GetInt("ACTUATOR_HEALTH_GOROUTINE_THRESHOLD"); actuatorHealthGoroutineThreshold != 0 </span><span class="cov0" title="0">{
+                viper.Set("actuator.health.goroutine_threshold", actuatorHealthGoroutineThreshold)
+        }</span>
+        <span class="cov8" title="5">if actuatorHealthDiskSpaceThresholdGB := viper.GetInt64("ACTUATOR_HEALTH_DISK_SPACE_THRESHOLD_GB"); actuatorHealthDiskSpaceThresholdGB != 0 </span><span class="cov0" title="0">{
+                viper.Set("actuator.health.disk_space_threshold_gb", actuatorHealthDiskSpaceThresholdGB)
+        }</span>
+        <span class="cov8" title="5">if actuatorMetricsEnabled := viper.GetBool("ACTUATOR_METRICS_ENABLED"); actuatorMetricsEnabled </span><span class="cov0" title="0">{
+                viper.Set("actuator.metrics.enabled", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorMetricsPrometheusEnabled := viper.GetBool("ACTUATOR_METRICS_PROMETHEUS_ENABLED"); actuatorMetricsPrometheusEnabled </span><span class="cov0" title="0">{
+                viper.Set("actuator.metrics.prometheus_enabled", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorMetricsRequestTracking := viper.GetBool("ACTUATOR_METRICS_REQUEST_TRACKING"); actuatorMetricsRequestTracking </span><span class="cov0" title="0">{
+                viper.Set("actuator.metrics.request_tracking", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsHealth := viper.GetBool("ACTUATOR_ENDPOINTS_HEALTH"); actuatorEndpointsHealth </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.health", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsInfo := viper.GetBool("ACTUATOR_ENDPOINTS_INFO"); actuatorEndpointsInfo </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.info", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsMetrics := viper.GetBool("ACTUATOR_ENDPOINTS_METRICS"); actuatorEndpointsMetrics </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.metrics", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsPrometheus := viper.GetBool("ACTUATOR_ENDPOINTS_PROMETHEUS"); actuatorEndpointsPrometheus </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.prometheus", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsStatus := viper.GetBool("ACTUATOR_ENDPOINTS_STATUS"); actuatorEndpointsStatus </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.status", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsUptime := viper.GetBool("ACTUATOR_ENDPOINTS_UPTIME"); actuatorEndpointsUptime </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.uptime", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsThreadDump := viper.GetBool("ACTUATOR_ENDPOINTS_THREAD_DUMP"); actuatorEndpointsThreadDump </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.threaddump", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsHeapDump := viper.GetBool("ACTUATOR_ENDPOINTS_HEAP_DUMP"); actuatorEndpointsHeapDump </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.heapdump", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsConfigProps := viper.GetBool("ACTUATOR_ENDPOINTS_CONFIG_PROPS"); actuatorEndpointsConfigProps </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.configprops", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsMappings := viper.GetBool("ACTUATOR_ENDPOINTS_MAPPINGS"); actuatorEndpointsMappings </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.mappings", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorEndpointsLoggers := viper.GetBool("ACTUATOR_ENDPOINTS_LOGGERS"); actuatorEndpointsLoggers </span><span class="cov0" title="0">{
+                viper.Set("actuator.endpoints.loggers", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorSecurityHealthPublic := viper.GetBool("ACTUATOR_SECURITY_HEALTH_PUBLIC"); actuatorSecurityHealthPublic </span><span class="cov0" title="0">{
+                viper.Set("actuator.security.health_public", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorSecurityMetricsPublic := viper.GetBool("ACTUATOR_SECURITY_METRICS_PUBLIC"); actuatorSecurityMetricsPublic </span><span class="cov0" title="0">{
+                viper.Set("actuator.security.metrics_public", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorSecuritySensitiveEndpointsRestricted := viper.GetBool("ACTUATOR_SECURITY_SENSITIVE_ENDPOINTS_RESTRICTED"); actuatorSecuritySensitiveEndpointsRestricted </span><span class="cov0" title="0">{
+                viper.Set("actuator.security.sensitive_endpoints_restricted", true)
+        }</span>
+        <span class="cov8" title="5">if actuatorSecurityAllowedIPs := viper.GetStringSlice("ACTUATOR_SECURITY_ALLOWED_IPS"); len(actuatorSecurityAllowedIPs) &gt; 0 </span><span class="cov0" title="0">{
+                viper.Set("actuator.security.allowed_ips", actuatorSecurityAllowedIPs)
         }</span>
 }
 
@@ -1443,7 +2098,7 @@ func (c *RedisConfig) GetRedisAddr() string <span class="cov4" title="2">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package rest
+		<pre class="file" id="file5" style="display: none">package rest
 
 import (
         "auth-service/internal/config"
@@ -1656,7 +2311,7 @@ type SuccessResponse struct {
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package rest
+		<pre class="file" id="file6" style="display: none">package rest
 
 import (
         "auth-service/internal/config"
@@ -2054,7 +2709,50 @@ type OneTimeSessionResponse struct {
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package middleware
+		<pre class="file" id="file7" style="display: none">package middleware
+
+import (
+        "auth-service/internal/actuator"
+        "time"
+
+        "github.com/gin-gonic/gin"
+)
+
+// ActuatorMiddleware creates middleware for tracking request metrics
+func ActuatorMiddleware(act *actuator.Actuator) gin.HandlerFunc <span class="cov8" title="1">{
+        return func(c *gin.Context) </span><span class="cov8" title="1">{
+                start := time.Now()
+
+                // Track active request
+                act.StartRequest(c.Request.Method, c.FullPath())
+
+                // Process request
+                c.Next()
+
+                // Track request completion
+                act.EndRequest(c.Request.Method, c.FullPath())
+
+                // Record metrics
+                duration := time.Since(start)
+                status := c.Writer.Status()
+                act.RecordRequest(c.Request.Method, c.FullPath(), status, duration)
+        }</span>
+}
+
+// HealthCheckMiddleware creates middleware for health check endpoints
+func HealthCheckMiddleware() gin.HandlerFunc <span class="cov8" title="1">{
+        return func(c *gin.Context) </span><span class="cov8" title="1">{
+                // Add cache headers for health check endpoints
+                c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+                c.Header("Pragma", "no-cache")
+                c.Header("Expires", "0")
+
+                c.Next()
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package middleware
 
 import (
         "auth-service/internal/service"

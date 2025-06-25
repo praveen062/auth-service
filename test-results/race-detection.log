@@ -1,5 +1,6 @@
 ?   	auth-service/docs	[no test files]
 ok  	auth-service/cmd/server	(cached)
+ok  	auth-service/internal/actuator	(cached)
 ok  	auth-service/internal/config	(cached)
 ok  	auth-service/internal/handler/rest	(cached)
 ok  	auth-service/internal/middleware	(cached)

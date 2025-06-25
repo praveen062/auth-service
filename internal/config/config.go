@@ -19,6 +19,7 @@ type Config struct {
 	Cache    CacheConfig    `mapstructure:"cache"`
 	Tenancy  TenancyConfig  `mapstructure:"tenancy"`
 	OneTime  OneTimeConfig  `mapstructure:"one_time_auth"`
+	Actuator ActuatorConfig `mapstructure:"actuator"`
 }
 
 // ServerConfig holds server configuration
@@ -152,6 +153,55 @@ type OneTimeConfig struct {
 	AllowedURLs     []string `mapstructure:"allowed_urls"`
 }
 
+// ActuatorConfig holds actuator configuration
+type ActuatorConfig struct {
+	Enabled          bool                   `mapstructure:"enabled"`
+	BasePath         string                 `mapstructure:"base_path"`
+	Health           HealthConfig           `mapstructure:"health"`
+	Metrics          MetricsConfig          `mapstructure:"metrics"`
+	Endpoints        EndpointsConfig        `mapstructure:"endpoints"`
+	ActuatorSecurity ActuatorSecurityConfig `mapstructure:"security"`
+}
+
+// HealthConfig holds health check configuration
+type HealthConfig struct {
+	Enabled                bool          `mapstructure:"enabled"`
+	Timeout                time.Duration `mapstructure:"timeout"`
+	MemoryThresholdPercent int           `mapstructure:"memory_threshold_percent"`
+	GoroutineThreshold     int           `mapstructure:"goroutine_threshold"`
+	DiskSpaceThresholdGB   int64         `mapstructure:"disk_space_threshold_gb"`
+}
+
+// MetricsConfig holds metrics configuration
+type MetricsConfig struct {
+	Enabled           bool `mapstructure:"enabled"`
+	PrometheusEnabled bool `mapstructure:"prometheus_enabled"`
+	RequestTracking   bool `mapstructure:"request_tracking"`
+}
+
+// EndpointsConfig holds endpoint configuration
+type EndpointsConfig struct {
+	Health      bool `mapstructure:"health"`
+	Info        bool `mapstructure:"info"`
+	Metrics     bool `mapstructure:"metrics"`
+	Prometheus  bool `mapstructure:"prometheus"`
+	Status      bool `mapstructure:"status"`
+	Uptime      bool `mapstructure:"uptime"`
+	ThreadDump  bool `mapstructure:"threaddump"`
+	HeapDump    bool `mapstructure:"heapdump"`
+	ConfigProps bool `mapstructure:"configprops"`
+	Mappings    bool `mapstructure:"mappings"`
+	Loggers     bool `mapstructure:"loggers"`
+}
+
+// ActuatorSecurityConfig holds actuator security configuration
+type ActuatorSecurityConfig struct {
+	HealthPublic                 bool     `mapstructure:"health_public"`
+	MetricsPublic                bool     `mapstructure:"metrics_public"`
+	SensitiveEndpointsRestricted bool     `mapstructure:"sensitive_endpoints_restricted"`
+	AllowedIPs                   []string `mapstructure:"allowed_ips"`
+}
+
 // LoadConfig loads configuration from file and environment variables
 func LoadConfig(configPath string) (*Config, error) {
 	viper.SetConfigFile(configPath)
@@ -237,6 +287,32 @@ func setDefaults() {
 	viper.SetDefault("one_time_auth.token_length", 32)
 	viper.SetDefault("one_time_auth.max_uses", 1)
 	viper.SetDefault("one_time_auth.expiration_hours", 1)
+
+	viper.SetDefault("actuator.enabled", false)
+	viper.SetDefault("actuator.base_path", "/actuator")
+	viper.SetDefault("actuator.health.enabled", true)
+	viper.SetDefault("actuator.health.timeout", "5s")
+	viper.SetDefault("actuator.health.memory_threshold_percent", 90)
+	viper.SetDefault("actuator.health.goroutine_threshold", 1000)
+	viper.SetDefault("actuator.health.disk_space_threshold_gb", 10)
+	viper.SetDefault("actuator.metrics.enabled", true)
+	viper.SetDefault("actuator.metrics.prometheus_enabled", true)
+	viper.SetDefault("actuator.metrics.request_tracking", true)
+	viper.SetDefault("actuator.endpoints.health", true)
+	viper.SetDefault("actuator.endpoints.info", true)
+	viper.SetDefault("actuator.endpoints.metrics", true)
+	viper.SetDefault("actuator.endpoints.prometheus", true)
+	viper.SetDefault("actuator.endpoints.status", true)
+	viper.SetDefault("actuator.endpoints.uptime", true)
+	viper.SetDefault("actuator.endpoints.threaddump", true)
+	viper.SetDefault("actuator.endpoints.heapdump", true)
+	viper.SetDefault("actuator.endpoints.configprops", true)
+	viper.SetDefault("actuator.endpoints.mappings", true)
+	viper.SetDefault("actuator.endpoints.loggers", true)
+	viper.SetDefault("actuator.security.health_public", true)
+	viper.SetDefault("actuator.security.metrics_public", true)
+	viper.SetDefault("actuator.security.sensitive_endpoints_restricted", true)
+	viper.SetDefault("actuator.security.allowed_ips", []string{})
 }
 
 // overrideWithEnvVars overrides configuration with environment variables
@@ -288,6 +364,83 @@ func overrideWithEnvVars() {
 	}
 	if googleClientSecret := viper.GetString("GOOGLE_CLIENT_SECRET"); googleClientSecret != "" {
 		viper.Set("oauth.google.client_secret", googleClientSecret)
+	}
+
+	// Actuator
+	if actuatorEnabled := viper.GetBool("ACTUATOR_ENABLED"); actuatorEnabled {
+		viper.Set("actuator.enabled", true)
+	}
+	if actuatorBasePath := viper.GetString("ACTUATOR_BASE_PATH"); actuatorBasePath != "" {
+		viper.Set("actuator.base_path", actuatorBasePath)
+	}
+	if actuatorHealthEnabled := viper.GetBool("ACTUATOR_HEALTH_ENABLED"); actuatorHealthEnabled {
+		viper.Set("actuator.health.enabled", true)
+	}
+	if actuatorHealthTimeout := viper.GetDuration("ACTUATOR_HEALTH_TIMEOUT"); actuatorHealthTimeout != 0 {
+		viper.Set("actuator.health.timeout", actuatorHealthTimeout)
+	}
+	if actuatorHealthMemoryThresholdPercent := viper.GetInt("ACTUATOR_HEALTH_MEMORY_THRESHOLD_PERCENT"); actuatorHealthMemoryThresholdPercent != 0 {
+		viper.Set("actuator.health.memory_threshold_percent", actuatorHealthMemoryThresholdPercent)
+	}
+	if actuatorHealthGoroutineThreshold := viper.GetInt("ACTUATOR_HEALTH_GOROUTINE_THRESHOLD"); actuatorHealthGoroutineThreshold != 0 {
+		viper.Set("actuator.health.goroutine_threshold", actuatorHealthGoroutineThreshold)
+	}
+	if actuatorHealthDiskSpaceThresholdGB := viper.GetInt64("ACTUATOR_HEALTH_DISK_SPACE_THRESHOLD_GB"); actuatorHealthDiskSpaceThresholdGB != 0 {
+		viper.Set("actuator.health.disk_space_threshold_gb", actuatorHealthDiskSpaceThresholdGB)
+	}
+	if actuatorMetricsEnabled := viper.GetBool("ACTUATOR_METRICS_ENABLED"); actuatorMetricsEnabled {
+		viper.Set("actuator.metrics.enabled", true)
+	}
+	if actuatorMetricsPrometheusEnabled := viper.GetBool("ACTUATOR_METRICS_PROMETHEUS_ENABLED"); actuatorMetricsPrometheusEnabled {
+		viper.Set("actuator.metrics.prometheus_enabled", true)
+	}
+	if actuatorMetricsRequestTracking := viper.GetBool("ACTUATOR_METRICS_REQUEST_TRACKING"); actuatorMetricsRequestTracking {
+		viper.Set("actuator.metrics.request_tracking", true)
+	}
+	if actuatorEndpointsHealth := viper.GetBool("ACTUATOR_ENDPOINTS_HEALTH"); actuatorEndpointsHealth {
+		viper.Set("actuator.endpoints.health", true)
+	}
+	if actuatorEndpointsInfo := viper.GetBool("ACTUATOR_ENDPOINTS_INFO"); actuatorEndpointsInfo {
+		viper.Set("actuator.endpoints.info", true)
+	}
+	if actuatorEndpointsMetrics := viper.GetBool("ACTUATOR_ENDPOINTS_METRICS"); actuatorEndpointsMetrics {
+		viper.Set("actuator.endpoints.metrics", true)
+	}
+	if actuatorEndpointsPrometheus := viper.GetBool("ACTUATOR_ENDPOINTS_PROMETHEUS"); actuatorEndpointsPrometheus {
+		viper.Set("actuator.endpoints.prometheus", true)
+	}
+	if actuatorEndpointsStatus := viper.GetBool("ACTUATOR_ENDPOINTS_STATUS"); actuatorEndpointsStatus {
+		viper.Set("actuator.endpoints.status", true)
+	}
+	if actuatorEndpointsUptime := viper.GetBool("ACTUATOR_ENDPOINTS_UPTIME"); actuatorEndpointsUptime {
+		viper.Set("actuator.endpoints.uptime", true)
+	}
+	if actuatorEndpointsThreadDump := viper.GetBool("ACTUATOR_ENDPOINTS_THREAD_DUMP"); actuatorEndpointsThreadDump {
+		viper.Set("actuator.endpoints.threaddump", true)
+	}
+	if actuatorEndpointsHeapDump := viper.GetBool("ACTUATOR_ENDPOINTS_HEAP_DUMP"); actuatorEndpointsHeapDump {
+		viper.Set("actuator.endpoints.heapdump", true)
+	}
+	if actuatorEndpointsConfigProps := viper.GetBool("ACTUATOR_ENDPOINTS_CONFIG_PROPS"); actuatorEndpointsConfigProps {
+		viper.Set("actuator.endpoints.configprops", true)
+	}
+	if actuatorEndpointsMappings := viper.GetBool("ACTUATOR_ENDPOINTS_MAPPINGS"); actuatorEndpointsMappings {
+		viper.Set("actuator.endpoints.mappings", true)
+	}
+	if actuatorEndpointsLoggers := viper.GetBool("ACTUATOR_ENDPOINTS_LOGGERS"); actuatorEndpointsLoggers {
+		viper.Set("actuator.endpoints.loggers", true)
+	}
+	if actuatorSecurityHealthPublic := viper.GetBool("ACTUATOR_SECURITY_HEALTH_PUBLIC"); actuatorSecurityHealthPublic {
+		viper.Set("actuator.security.health_public", true)
+	}
+	if actuatorSecurityMetricsPublic := viper.GetBool("ACTUATOR_SECURITY_METRICS_PUBLIC"); actuatorSecurityMetricsPublic {
+		viper.Set("actuator.security.metrics_public", true)
+	}
+	if actuatorSecuritySensitiveEndpointsRestricted := viper.GetBool("ACTUATOR_SECURITY_SENSITIVE_ENDPOINTS_RESTRICTED"); actuatorSecuritySensitiveEndpointsRestricted {
+		viper.Set("actuator.security.sensitive_endpoints_restricted", true)
+	}
+	if actuatorSecurityAllowedIPs := viper.GetStringSlice("ACTUATOR_SECURITY_ALLOWED_IPS"); len(actuatorSecurityAllowedIPs) > 0 {
+		viper.Set("actuator.security.allowed_ips", actuatorSecurityAllowedIPs)
 	}
 }
 

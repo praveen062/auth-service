@@ -32,8 +32,67 @@
 === RUN   TestMain_EnvironmentVariableOverride
 --- PASS: TestMain_EnvironmentVariableOverride (0.00s)
 PASS
-coverage: 20.0% of statements
-ok  	auth-service/cmd/server	0.478s	coverage: 20.0% of statements
+coverage: 14.6% of statements
+ok  	auth-service/cmd/server	0.948s	coverage: 14.6% of statements
+=== RUN   TestNewActuator
+--- PASS: TestNewActuator (0.00s)
+=== RUN   TestActuator_Info
+--- PASS: TestActuator_Info (0.00s)
+=== RUN   TestActuator_Health
+--- PASS: TestActuator_Health (0.00s)
+=== RUN   TestActuator_Liveness
+--- PASS: TestActuator_Liveness (0.00s)
+=== RUN   TestActuator_Readiness
+--- PASS: TestActuator_Readiness (0.00s)
+=== RUN   TestActuator_Environment
+--- PASS: TestActuator_Environment (0.00s)
+=== RUN   TestActuator_Metrics
+--- PASS: TestActuator_Metrics (0.00s)
+=== RUN   TestActuator_PrometheusMetrics
+--- PASS: TestActuator_PrometheusMetrics (0.00s)
+=== RUN   TestActuator_Status
+--- PASS: TestActuator_Status (0.00s)
+=== RUN   TestActuator_Uptime
+--- PASS: TestActuator_Uptime (0.00s)
+=== RUN   TestActuator_ThreadDump
+--- PASS: TestActuator_ThreadDump (0.00s)
+=== RUN   TestActuator_HeapDump
+--- PASS: TestActuator_HeapDump (0.00s)
+=== RUN   TestActuator_Mappings
+--- PASS: TestActuator_Mappings (0.00s)
+=== RUN   TestActuator_Loggers
+--- PASS: TestActuator_Loggers (0.00s)
+=== RUN   TestActuator_SetLoggerLevel
+--- PASS: TestActuator_SetLoggerLevel (0.00s)
+=== RUN   TestActuator_RecordRequest
+--- PASS: TestActuator_RecordRequest (0.00s)
+=== RUN   TestActuator_StartEndRequest
+--- PASS: TestActuator_StartEndRequest (0.00s)
+=== RUN   TestActuator_GetMemoryStats
+--- PASS: TestActuator_GetMemoryStats (0.00s)
+=== RUN   TestActuator_GetRuntimeStats
+--- PASS: TestActuator_GetRuntimeStats (0.00s)
+=== RUN   TestActuator_GetRequestStats
+--- PASS: TestActuator_GetRequestStats (0.00s)
+=== RUN   TestDatabaseHealthCheck
+--- PASS: TestDatabaseHealthCheck (0.00s)
+=== RUN   TestRedisHealthCheck
+--- PASS: TestRedisHealthCheck (0.00s)
+=== RUN   TestDiskSpaceHealthCheck
+--- PASS: TestDiskSpaceHealthCheck (0.00s)
+=== RUN   TestMemoryHealthCheck
+--- PASS: TestMemoryHealthCheck (0.00s)
+=== RUN   TestGoroutineHealthCheck
+--- PASS: TestGoroutineHealthCheck (0.00s)
+=== RUN   TestCustomHealthCheck
+--- PASS: TestCustomHealthCheck (0.00s)
+=== RUN   TestTimeoutHealthCheck
+--- PASS: TestTimeoutHealthCheck (0.06s)
+=== RUN   TestTimeoutHealthCheckWithError
+--- PASS: TestTimeoutHealthCheckWithError (0.00s)
+PASS
+coverage: 91.7% of statements
+ok  	auth-service/internal/actuator	1.225s	coverage: 91.7% of statements
 === RUN   TestLoadConfig_Success
 --- PASS: TestLoadConfig_Success (0.00s)
 === RUN   TestLoadConfig_FileNotFound
@@ -57,8 +116,8 @@ ok  	auth-service/cmd/server	0.478s	coverage: 20.0% of statements
 === RUN   TestConfig_CompleteConfiguration
 --- PASS: TestConfig_CompleteConfiguration (0.00s)
 PASS
-coverage: 97.7% of statements
-ok  	auth-service/internal/config	0.840s	coverage: 97.7% of statements
+coverage: 83.4% of statements
+ok  	auth-service/internal/config	0.224s	coverage: 83.4% of statements
 === RUN   TestAuthHandler_Login_Success
 --- PASS: TestAuthHandler_Login_Success (0.00s)
 === RUN   TestAuthHandler_Login_InvalidEmail
@@ -119,7 +178,11 @@ ok  	auth-service/internal/config	0.840s	coverage: 97.7% of statements
 --- PASS: TestOAuthHandler_NewOAuthHandler (0.00s)
 PASS
 coverage: 91.1% of statements
-ok  	auth-service/internal/handler/rest	1.227s	coverage: 91.1% of statements
+ok  	auth-service/internal/handler/rest	1.530s	coverage: 91.1% of statements
+=== RUN   TestActuatorMiddleware
+--- PASS: TestActuatorMiddleware (0.00s)
+=== RUN   TestHealthCheckMiddleware
+--- PASS: TestHealthCheckMiddleware (0.00s)
 === RUN   TestRBACMiddleware_UserHasPermission_Success
     rbac_middleware_test.go:89: PASS:	UserHasPermission(string,string,string,string)
 --- PASS: TestRBACMiddleware_UserHasPermission_Success (0.00s)
@@ -147,7 +210,7 @@ ok  	auth-service/internal/handler/rest	1.227s	coverage: 91.1% of statements
 --- PASS: TestRBACMiddleware_DifferentTenants (0.00s)
 PASS
 coverage: 100.0% of statements
-ok  	auth-service/internal/middleware	0.226s	coverage: 100.0% of statements
+ok  	auth-service/internal/middleware	0.639s	coverage: 100.0% of statements
 === RUN   TestRole_Structure
 --- PASS: TestRole_Structure (0.00s)
 === RUN   TestRole_DefaultRole
@@ -232,7 +295,7 @@ ok  	auth-service/internal/middleware	0.226s	coverage: 100.0% of statements
     --- PASS: TestServiceRole_Validation/Empty_TenantID (0.00s)
 PASS
 coverage: [no statements]
-ok  	auth-service/internal/models	0.656s	coverage: [no statements]
+ok  	auth-service/internal/models	0.406s	coverage: [no statements]
 === RUN   TestRBACService_AssignRoleToUser_Success
     rbac_service_test.go:65: PASS:	AssignRoleToUser(context.backgroundCtx,string,string,string)
 --- PASS: TestRBACService_AssignRoleToUser_Success (0.00s)
@@ -294,4 +357,4 @@ ok  	auth-service/internal/models	0.656s	coverage: [no statements]
 --- PASS: TestRBACService_Integration_ServiceRoleAssignment (0.00s)
 PASS
 coverage: [no statements]
-ok  	auth-service/internal/service	1.025s	coverage: [no statements]
+ok  	auth-service/internal/service	1.326s	coverage: [no statements]

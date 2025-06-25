@@ -13,7 +13,11 @@ import (
 func isolateEnvVars(t *testing.T, testFunc func()) {
 	// Store original environment variables
 	originalVars := make(map[string]string)
-	envVars := []string{"DB_HOST", "DB_PASSWORD", "JWT_SECRET", "SERVER_PORT", "DATABASE_HOST"}
+	envVars := []string{
+		"DB_HOST", "DB_PASSWORD", "JWT_SECRET", "SERVER_PORT", "DATABASE_HOST",
+		"DB_PORT", "DB_NAME", "DB_USER", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD",
+		"GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
+	}
 
 	for _, envVar := range envVars {
 		if value := os.Getenv(envVar); value != "" {
@@ -21,13 +25,28 @@ func isolateEnvVars(t *testing.T, testFunc func()) {
 		}
 	}
 
-	// Clean up environment variables
-	for _, envVar := range envVars {
-		os.Unsetenv(envVar)
-	}
+	// Set test environment variables
+	os.Setenv("DB_HOST", "test-db-host")
+	os.Setenv("DB_PASSWORD", "test-db-password")
+	os.Setenv("JWT_SECRET", "test-jwt-secret")
+	os.Setenv("SERVER_PORT", "8080")
+	os.Setenv("DATABASE_HOST", "test-database-host")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("DB_NAME", "test-auth-service")
+	os.Setenv("DB_USER", "test-user")
+	os.Setenv("REDIS_HOST", "test-redis-host")
+	os.Setenv("REDIS_PORT", "6379")
+	os.Setenv("REDIS_PASSWORD", "test-redis-password")
+	os.Setenv("GOOGLE_CLIENT_ID", "test-google-client-id")
+	os.Setenv("GOOGLE_CLIENT_SECRET", "test-google-client-secret")
 
 	// Restore original values after test
 	defer func() {
+		// First, unset all test variables
+		for _, envVar := range envVars {
+			os.Unsetenv(envVar)
+		}
+		// Then restore original values
 		for envVar, value := range originalVars {
 			os.Setenv(envVar, value)
 		}
@@ -38,8 +57,9 @@ func isolateEnvVars(t *testing.T, testFunc func()) {
 }
 
 func TestLoadConfig_Success(t *testing.T) {
-	// Setup - create a temporary config file
-	configContent := `
+	isolateEnvVars(t, func() {
+		// Setup - create a temporary config file
+		configContent := `
 server:
   port: 8080
   host: "0.0.0.0"
@@ -70,48 +90,49 @@ jwt:
   audience: "test-audience"
 `
 
-	tmpFile, err := os.CreateTemp("", "test-config-*.yaml")
-	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+		tmpFile, err := os.CreateTemp("", "test-config-*.yaml")
+		require.NoError(t, err)
+		defer os.Remove(tmpFile.Name())
 
-	_, err = tmpFile.WriteString(configContent)
-	require.NoError(t, err)
-	tmpFile.Close()
+		_, err = tmpFile.WriteString(configContent)
+		require.NoError(t, err)
+		tmpFile.Close()
 
-	// Execute
-	cfg, err := LoadConfig(tmpFile.Name())
+		// Execute
+		cfg, err := LoadConfig(tmpFile.Name())
 
-	// Assert
-	require.NoError(t, err)
-	assert.NotNil(t, cfg)
+		// Assert
+		require.NoError(t, err)
+		assert.NotNil(t, cfg)
 
-	// Check server config
-	assert.Equal(t, 8080, cfg.Server.Port)
-	assert.Equal(t, "0.0.0.0", cfg.Server.Host)
-	assert.Equal(t, 30*time.Second, cfg.Server.ReadTimeout)
-	assert.Equal(t, 30*time.Second, cfg.Server.WriteTimeout)
+		// Check server config
+		assert.Equal(t, 8080, cfg.Server.Port)
+		assert.Equal(t, "0.0.0.0", cfg.Server.Host)
+		assert.Equal(t, 30*time.Second, cfg.Server.ReadTimeout)
+		assert.Equal(t, 30*time.Second, cfg.Server.WriteTimeout)
 
-	// Check database config - environment variables should override config file values
-	assert.Equal(t, "test-db-host", cfg.Database.Host) // From environment variable
-	assert.Equal(t, 5432, cfg.Database.Port)
-	assert.Equal(t, "test-auth-service", cfg.Database.Name)    // From environment variable
-	assert.Equal(t, "test-user", cfg.Database.User)            // From environment variable
-	assert.Equal(t, "test-db-password", cfg.Database.Password) // From environment variable
+		// Check database config - environment variables should override config file values
+		assert.Equal(t, "test-db-host", cfg.Database.Host) // From environment variable
+		assert.Equal(t, 5432, cfg.Database.Port)
+		assert.Equal(t, "test-auth-service", cfg.Database.Name)    // From environment variable
+		assert.Equal(t, "test-user", cfg.Database.User)            // From environment variable
+		assert.Equal(t, "test-db-password", cfg.Database.Password) // From environment variable
 
-	// Check OAuth config - environment variables should override config file values
-	assert.Equal(t, "test-google-client-id", cfg.OAuth.Google.ClientID)         // From environment variable
-	assert.Equal(t, "test-google-client-secret", cfg.OAuth.Google.ClientSecret) // From environment variable
-	assert.Equal(t, "http://localhost:8080/callback", cfg.OAuth.Google.RedirectURL)
-	assert.Len(t, cfg.OAuth.Google.Scopes, 2)
-	assert.Contains(t, cfg.OAuth.Google.Scopes, "email")
-	assert.Contains(t, cfg.OAuth.Google.Scopes, "profile")
+		// Check OAuth config - environment variables should override config file values
+		assert.Equal(t, "test-google-client-id", cfg.OAuth.Google.ClientID)         // From environment variable
+		assert.Equal(t, "test-google-client-secret", cfg.OAuth.Google.ClientSecret) // From environment variable
+		assert.Equal(t, "http://localhost:8080/callback", cfg.OAuth.Google.RedirectURL)
+		assert.Len(t, cfg.OAuth.Google.Scopes, 2)
+		assert.Contains(t, cfg.OAuth.Google.Scopes, "email")
+		assert.Contains(t, cfg.OAuth.Google.Scopes, "profile")
 
-	// Check JWT config - environment variable should override config file value
-	assert.Equal(t, "test-jwt-secret", cfg.JWT.Secret) // From environment variable
-	assert.Equal(t, 24, cfg.JWT.ExpirationHours)
-	assert.Equal(t, 168, cfg.JWT.RefreshExpirationHours)
-	assert.Equal(t, "test-issuer", cfg.JWT.Issuer)
-	assert.Equal(t, "test-audience", cfg.JWT.Audience)
+		// Check JWT config - environment variable should override config file value
+		assert.Equal(t, "test-jwt-secret", cfg.JWT.Secret) // From environment variable
+		assert.Equal(t, 24, cfg.JWT.ExpirationHours)
+		assert.Equal(t, 168, cfg.JWT.RefreshExpirationHours)
+		assert.Equal(t, "test-issuer", cfg.JWT.Issuer)
+		assert.Equal(t, "test-audience", cfg.JWT.Audience)
+	})
 }
 
 func TestLoadConfig_FileNotFound(t *testing.T) {
@@ -153,8 +174,9 @@ server:
 }
 
 func TestLoadConfig_WithEnvironmentVariables(t *testing.T) {
-	// Setup - create a temporary config file
-	configContent := `
+	isolateEnvVars(t, func() {
+		// Setup - create a temporary config file
+		configContent := `
 server:
   port: 8080
   host: "0.0.0.0"
@@ -167,32 +189,33 @@ database:
   password: "test_password"
 `
 
-	tmpFile, err := os.CreateTemp("", "test-config-*.yaml")
-	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+		tmpFile, err := os.CreateTemp("", "test-config-*.yaml")
+		require.NoError(t, err)
+		defer os.Remove(tmpFile.Name())
 
-	_, err = tmpFile.WriteString(configContent)
-	require.NoError(t, err)
-	tmpFile.Close()
+		_, err = tmpFile.WriteString(configContent)
+		require.NoError(t, err)
+		tmpFile.Close()
 
-	// Execute
-	cfg, err := LoadConfig(tmpFile.Name())
+		// Execute
+		cfg, err := LoadConfig(tmpFile.Name())
 
-	// Assert
-	require.NoError(t, err)
-	assert.NotNil(t, cfg)
+		// Assert
+		require.NoError(t, err)
+		assert.NotNil(t, cfg)
 
-	// Environment variables should override config file values
-	assert.Equal(t, "test-db-host", cfg.Database.Host)
-	assert.Equal(t, "test-db-password", cfg.Database.Password)
-	assert.Equal(t, "test-jwt-secret", cfg.JWT.Secret)
+		// Environment variables should override config file values
+		assert.Equal(t, "test-db-host", cfg.Database.Host)
+		assert.Equal(t, "test-db-password", cfg.Database.Password)
+		assert.Equal(t, "test-jwt-secret", cfg.JWT.Secret)
 
-	// Other values should remain from config file
-	assert.Equal(t, "0.0.0.0", cfg.Server.Host)
-	assert.Equal(t, 8080, cfg.Server.Port)
-	assert.Equal(t, 5432, cfg.Database.Port)
-	assert.Equal(t, "test-auth-service", cfg.Database.Name) // From environment variable
-	assert.Equal(t, "test-user", cfg.Database.User)         // From environment variable
+		// Other values should remain from config file
+		assert.Equal(t, "0.0.0.0", cfg.Server.Host)
+		assert.Equal(t, 8080, cfg.Server.Port)
+		assert.Equal(t, 5432, cfg.Database.Port)
+		assert.Equal(t, "test-auth-service", cfg.Database.Name) // From environment variable
+		assert.Equal(t, "test-user", cfg.Database.User)         // From environment variable
+	})
 }
 
 func TestLoadConfig_DefaultValues(t *testing.T) {

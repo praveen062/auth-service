@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"auth-service/internal/actuator"
 	"auth-service/internal/config"
 	rest "auth-service/internal/handler/rest"
+	"auth-service/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -81,10 +83,42 @@ func main() {
 
 	fmt.Printf("Loaded config: %+v\n", cfg.Server)
 
+	// Create actuator
+	appInfo := &actuator.AppInfo{
+		Name:        "auth-service",
+		Version:     "1.0.0",
+		Description: "Multi-Tenant OAuth Service",
+		BuildTime:   "2024-01-01T00:00:00Z",
+		GitCommit:   "development",
+		Environment: "development",
+		Properties: map[string]string{
+			"server.port":   fmt.Sprintf("%d", cfg.Server.Port),
+			"database.host": cfg.Database.Host,
+			"redis.host":    cfg.Redis.Host,
+		},
+	}
+
+	act := actuator.NewActuator(appInfo)
+
+	// Register health checks
+	act.RegisterHealthCheck("memory", actuator.MemoryHealthCheck(90))
+	act.RegisterHealthCheck("goroutines", actuator.GoroutineHealthCheck(1000))
+	act.RegisterHealthCheck("disk", actuator.DiskSpaceHealthCheck(1))
+
+	// Register readiness checks (these would be added when DB/Redis are connected)
+	// act.RegisterReadinessCheck("database", actuator.DatabaseHealthCheck(db))
+	// act.RegisterReadinessCheck("redis", actuator.RedisHealthCheck(redisClient))
+
 	// Set up Gin
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
+
+	// Register actuator routes
+	act.RegisterRoutes(r)
+
+	// Add actuator middleware for metrics tracking
+	r.Use(middleware.ActuatorMiddleware(act))
 
 	// Register REST handlers
 	authHandler := rest.NewAuthHandler(cfg)
@@ -113,6 +147,13 @@ func main() {
 
 	// Start server
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	fmt.Printf("Starting server on %s\n", addr)
+	fmt.Printf("Actuator endpoints available at:\n")
+	fmt.Printf("  Health: http://%s/actuator/health\n", addr)
+	fmt.Printf("  Metrics: http://%s/actuator/metrics\n", addr)
+	fmt.Printf("  Prometheus: http://%s/actuator/prometheus\n", addr)
+	fmt.Printf("  Info: http://%s/actuator/info\n", addr)
+
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("failed to start server: %v", err)
 	}
