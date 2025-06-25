@@ -59,15 +59,15 @@
 				
 				<option value="file1">auth-service/docs/docs.go (100.0%)</option>
 				
-				<option value="file2">auth-service/internal/actuator/actuator.go (92.6%)</option>
+				<option value="file2">auth-service/internal/actuator/actuator.go (100.0%)</option>
 				
 				<option value="file3">auth-service/internal/actuator/health_checks.go (89.3%)</option>
 				
-				<option value="file4">auth-service/internal/config/config.go (83.4%)</option>
+				<option value="file4">auth-service/internal/config/config.go (90.2%)</option>
 				
 				<option value="file5">auth-service/internal/handler/rest/auth_handler.go (100.0%)</option>
 				
-				<option value="file6">auth-service/internal/handler/rest/oauth_handler.go (88.6%)</option>
+				<option value="file6">auth-service/internal/handler/rest/oauth_handler.go (92.9%)</option>
 				
 				<option value="file7">auth-service/internal/middleware/actuator_middleware.go (100.0%)</option>
 				
@@ -157,16 +157,16 @@ import (
 // @tag.description Service-to-service authentication endpoints
 
 // ipAllowlistMiddleware allows only requests from allowed IPs
-func ipAllowlistMiddleware(allowedIPs []string) gin.HandlerFunc <span class="cov8" title="10">{
-        return func(c *gin.Context) </span><span class="cov8" title="10">{
+func ipAllowlistMiddleware(allowedIPs []string) gin.HandlerFunc <span class="cov8" title="24">{
+        return func(c *gin.Context) </span><span class="cov8" title="32">{
                 clientIP := c.ClientIP()
-                for _, ip := range allowedIPs </span><span class="cov10" title="14">{
-                        if strings.HasPrefix(clientIP, ip) </span><span class="cov6" title="5">{
+                for _, ip := range allowedIPs </span><span class="cov10" title="55">{
+                        if strings.HasPrefix(clientIP, ip) </span><span class="cov7" title="16">{
                                 c.Next()
                                 return
                         }</span>
                 }
-                <span class="cov6" title="5">c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: internal access only"})</span>
+                <span class="cov7" title="16">c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: internal access only"})</span>
         }
 }
 
@@ -1221,7 +1221,7 @@ type AppInfo struct {
 }
 
 // NewActuator creates a new actuator instance
-func NewActuator(appInfo *AppInfo) *Actuator <span class="cov10" title="20">{
+func NewActuator(appInfo *AppInfo) *Actuator <span class="cov10" title="33">{
         registry := prometheus.NewRegistry()
 
         // Create metrics
@@ -1268,19 +1268,19 @@ func NewActuator(appInfo *AppInfo) *Actuator <span class="cov10" title="20">{
 }</span>
 
 // RegisterHealthCheck registers a health check with a name
-func (a *Actuator) RegisterHealthCheck(name string, check healthcheck.Check) <span class="cov0" title="0">{
+func (a *Actuator) RegisterHealthCheck(name string, check healthcheck.Check) <span class="cov1" title="1">{
         a.health.AddLivenessCheck(name, check)
 }</span>
 
 // RegisterReadinessCheck registers a readiness check with a name
-func (a *Actuator) RegisterReadinessCheck(name string, check healthcheck.Check) <span class="cov0" title="0">{
+func (a *Actuator) RegisterReadinessCheck(name string, check healthcheck.Check) <span class="cov1" title="1">{
         a.health.AddReadinessCheck(name, check)
 }</span>
 
 // RegisterRoutes registers all actuator endpoints
-func (a *Actuator) RegisterRoutes(router *gin.Engine) <span class="cov8" title="14">{
+func (a *Actuator) RegisterRoutes(router *gin.Engine) <span class="cov8" title="19">{
         actuator := router.Group("/actuator")
-        </span><span class="cov8" title="14">{
+        </span><span class="cov8" title="19">{
                 // Health endpoints
                 actuator.GET("/health", a.Health)
                 actuator.GET("/health/live", a.Liveness)
@@ -1311,28 +1311,28 @@ func (a *Actuator) RegisterRoutes(router *gin.Engine) <span class="cov8" title="
 }
 
 // Health returns overall health status
-func (a *Actuator) Health(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Health(c *gin.Context) <span class="cov2" title="2">{
         // Use the healthcheck handler to get overall health
         a.health.LiveEndpoint(c.Writer, c.Request)
 }</span>
 
 // Liveness returns liveness check status
-func (a *Actuator) Liveness(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Liveness(c *gin.Context) <span class="cov2" title="2">{
         a.health.LiveEndpoint(c.Writer, c.Request)
 }</span>
 
 // Readiness returns readiness check status
-func (a *Actuator) Readiness(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Readiness(c *gin.Context) <span class="cov2" title="2">{
         a.health.ReadyEndpoint(c.Writer, c.Request)
 }</span>
 
 // Info returns application information
-func (a *Actuator) Info(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Info(c *gin.Context) <span class="cov2" title="2">{
         c.JSON(http.StatusOK, a.appInfo)
 }</span>
 
 // Environment returns environment information
-func (a *Actuator) Environment(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Environment(c *gin.Context) <span class="cov2" title="2">{
         env := gin.H{
                 "goVersion":    runtime.Version(),
                 "os":           runtime.GOOS,
@@ -1347,7 +1347,7 @@ func (a *Actuator) Environment(c *gin.Context) <span class="cov1" title="1">{
 }</span>
 
 // Metrics returns application metrics
-func (a *Actuator) Metrics(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Metrics(c *gin.Context) <span class="cov2" title="2">{
         metrics := gin.H{
                 "uptime":    time.Since(a.startTime).String(),
                 "memory":    a.getMemoryStats(),
@@ -1360,13 +1360,13 @@ func (a *Actuator) Metrics(c *gin.Context) <span class="cov1" title="1">{
 }</span>
 
 // PrometheusMetrics returns Prometheus-formatted metrics
-func (a *Actuator) PrometheusMetrics(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) PrometheusMetrics(c *gin.Context) <span class="cov2" title="2">{
         handler := promhttp.HandlerFor(a.registry, promhttp.HandlerOpts{})
         handler.ServeHTTP(c.Writer, c.Request)
 }</span>
 
 // Status returns application status
-func (a *Actuator) Status(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Status(c *gin.Context) <span class="cov2" title="2">{
         status := gin.H{
                 "status":      "RUNNING",
                 "startTime":   a.startTime,
@@ -1381,7 +1381,7 @@ func (a *Actuator) Status(c *gin.Context) <span class="cov1" title="1">{
 }</span>
 
 // Uptime returns application uptime
-func (a *Actuator) Uptime(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Uptime(c *gin.Context) <span class="cov2" title="2">{
         uptime := gin.H{
                 "uptime":      time.Since(a.startTime).String(),
                 "startTime":   a.startTime,
@@ -1393,7 +1393,7 @@ func (a *Actuator) Uptime(c *gin.Context) <span class="cov1" title="1">{
 }</span>
 
 // ThreadDump returns goroutine information
-func (a *Actuator) ThreadDump(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) ThreadDump(c *gin.Context) <span class="cov2" title="2">{
         // Get goroutine count and stack traces
         stack := make([]byte, 1024*1024)
         stack = stack[:runtime.Stack(stack, true)]
@@ -1408,7 +1408,7 @@ func (a *Actuator) ThreadDump(c *gin.Context) <span class="cov1" title="1">{
 }</span>
 
 // HeapDump returns memory heap information
-func (a *Actuator) HeapDump(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) HeapDump(c *gin.Context) <span class="cov2" title="2">{
         var m runtime.MemStats
         runtime.ReadMemStats(&amp;m)
 
@@ -1429,7 +1429,7 @@ func (a *Actuator) HeapDump(c *gin.Context) <span class="cov1" title="1">{
 }</span>
 
 // ConfigProps returns configuration properties
-func (a *Actuator) ConfigProps(c *gin.Context) <span class="cov0" title="0">{
+func (a *Actuator) ConfigProps(c *gin.Context) <span class="cov2" title="2">{
         c.JSON(http.StatusOK, gin.H{
                 "application": a.appInfo,
                 "timestamp":   time.Now(),
@@ -1437,7 +1437,7 @@ func (a *Actuator) ConfigProps(c *gin.Context) <span class="cov0" title="0">{
 }</span>
 
 // Mappings returns endpoint mappings
-func (a *Actuator) Mappings(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Mappings(c *gin.Context) <span class="cov2" title="2">{
         mappings := gin.H{
                 "actuator": gin.H{
                         "health":       "/actuator/health",
@@ -1458,7 +1458,7 @@ func (a *Actuator) Mappings(c *gin.Context) <span class="cov1" title="1">{
 }</span>
 
 // Loggers returns logger information
-func (a *Actuator) Loggers(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) Loggers(c *gin.Context) <span class="cov2" title="2">{
         loggers := gin.H{
                 "levels": gin.H{
                         "ROOT":         "INFO",
@@ -1471,21 +1471,21 @@ func (a *Actuator) Loggers(c *gin.Context) <span class="cov1" title="1">{
 }</span>
 
 // SetLoggerLevel sets logger level
-func (a *Actuator) SetLoggerLevel(c *gin.Context) <span class="cov1" title="1">{
+func (a *Actuator) SetLoggerLevel(c *gin.Context) <span class="cov4" title="4">{
         loggerName := c.Param("name")
 
         var request struct {
                 Level string `json:"level"`
         }
 
-        if err := c.ShouldBindJSON(&amp;request); err != nil </span><span class="cov0" title="0">{
+        if err := c.ShouldBindJSON(&amp;request); err != nil </span><span class="cov2" title="2">{
                 c.JSON(http.StatusBadRequest, gin.H{
                         "error": "Invalid request body",
                 })
                 return
         }</span>
 
-        <span class="cov1" title="1">c.JSON(http.StatusOK, gin.H{
+        <span class="cov2" title="2">c.JSON(http.StatusOK, gin.H{
                 "logger":  loggerName,
                 "level":   request.Level,
                 "message": "Logger level updated",
@@ -1493,23 +1493,23 @@ func (a *Actuator) SetLoggerLevel(c *gin.Context) <span class="cov1" title="1">{
 }
 
 // RecordRequest records request metrics
-func (a *Actuator) RecordRequest(method, endpoint string, status int, duration time.Duration) <span class="cov1" title="1">{
+func (a *Actuator) RecordRequest(method, endpoint string, status int, duration time.Duration) <span class="cov4" title="4">{
         a.requestCount.WithLabelValues(method, endpoint, string(rune(status))).Inc()
         a.requestDuration.WithLabelValues(method, endpoint).Observe(duration.Seconds())
 }</span>
 
 // StartRequest starts tracking an active request
-func (a *Actuator) StartRequest(method, endpoint string) <span class="cov1" title="1">{
+func (a *Actuator) StartRequest(method, endpoint string) <span class="cov2" title="2">{
         a.activeRequests.WithLabelValues(method, endpoint).Inc()
 }</span>
 
 // EndRequest ends tracking an active request
-func (a *Actuator) EndRequest(method, endpoint string) <span class="cov1" title="1">{
+func (a *Actuator) EndRequest(method, endpoint string) <span class="cov2" title="2">{
         a.activeRequests.WithLabelValues(method, endpoint).Dec()
 }</span>
 
 // getMemoryStats returns current memory statistics
-func (a *Actuator) getMemoryStats() gin.H <span class="cov4" title="3">{
+func (a *Actuator) getMemoryStats() gin.H <span class="cov5" title="6">{
         var m runtime.MemStats
         runtime.ReadMemStats(&amp;m)
 
@@ -1526,7 +1526,7 @@ func (a *Actuator) getMemoryStats() gin.H <span class="cov4" title="3">{
 }</span>
 
 // getRuntimeStats returns current runtime statistics
-func (a *Actuator) getRuntimeStats() gin.H <span class="cov3" title="2">{
+func (a *Actuator) getRuntimeStats() gin.H <span class="cov4" title="4">{
         return gin.H{
                 "numCPU":       runtime.NumCPU(),
                 "numGoroutine": runtime.NumGoroutine(),
@@ -1536,7 +1536,7 @@ func (a *Actuator) getRuntimeStats() gin.H <span class="cov3" title="2">{
 }</span>
 
 // getRequestStats returns request statistics
-func (a *Actuator) getRequestStats() gin.H <span class="cov3" title="2">{
+func (a *Actuator) getRequestStats() gin.H <span class="cov4" title="4">{
         // This would typically return actual request statistics
         // For now, return placeholder data
         return gin.H{
@@ -1562,7 +1562,7 @@ import (
 )
 
 // DatabaseHealthCheck creates a health check for database connectivity
-func DatabaseHealthCheck(db *sql.DB) healthcheck.Check <span class="cov1" title="1">{
+func DatabaseHealthCheck(db *sql.DB) healthcheck.Check <span class="cov4" title="2">{
         return func() error </span><span class="cov0" title="0">{
                 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
                 defer cancel()
@@ -1572,8 +1572,8 @@ func DatabaseHealthCheck(db *sql.DB) healthcheck.Check <span class="cov1" title=
 }
 
 // RedisHealthCheck creates a health check for Redis connectivity
-func RedisHealthCheck(redisClient interface{}) healthcheck.Check <span class="cov1" title="1">{
-        return func() error </span><span class="cov1" title="1">{
+func RedisHealthCheck(redisClient interface{}) healthcheck.Check <span class="cov6" title="3">{
+        return func() error </span><span class="cov6" title="3">{
                 // This is a placeholder - you would implement actual Redis ping
                 // For now, return nil to indicate success
                 return nil
@@ -1581,8 +1581,8 @@ func RedisHealthCheck(redisClient interface{}) healthcheck.Check <span class="co
 }
 
 // DiskSpaceHealthCheck creates a health check for disk space
-func DiskSpaceHealthCheck(minSpaceGB int64) healthcheck.Check <span class="cov1" title="1">{
-        return func() error </span><span class="cov1" title="1">{
+func DiskSpaceHealthCheck(minSpaceGB int64) healthcheck.Check <span class="cov7" title="4">{
+        return func() error </span><span class="cov7" title="4">{
                 // This is a placeholder - you would implement actual disk space check
                 // For now, return nil to indicate success
                 return nil
@@ -1590,50 +1590,50 @@ func DiskSpaceHealthCheck(minSpaceGB int64) healthcheck.Check <span class="cov1"
 }
 
 // MemoryHealthCheck creates a health check for memory usage
-func MemoryHealthCheck(maxMemoryPercent int) healthcheck.Check <span class="cov5" title="2">{
-        return func() error </span><span class="cov5" title="2">{
+func MemoryHealthCheck(maxMemoryPercent int) healthcheck.Check <span class="cov10" title="6">{
+        return func() error </span><span class="cov10" title="6">{
                 var m runtime.MemStats
                 runtime.ReadMemStats(&amp;m)
 
                 // Calculate memory usage percentage
                 memoryUsagePercent := float64(m.Sys) / float64(1&lt;&lt;30) * 100 // Convert to GB
 
-                if memoryUsagePercent &gt; float64(maxMemoryPercent) </span><span class="cov1" title="1">{
+                if memoryUsagePercent &gt; float64(maxMemoryPercent) </span><span class="cov6" title="3">{
                         return fmt.Errorf("memory usage too high: %.2f%%", memoryUsagePercent)
                 }</span>
 
-                <span class="cov1" title="1">return nil</span>
+                <span class="cov6" title="3">return nil</span>
         }
 }
 
 // GoroutineHealthCheck creates a health check for goroutine count
-func GoroutineHealthCheck(maxGoroutines int) healthcheck.Check <span class="cov5" title="2">{
-        return func() error </span><span class="cov5" title="2">{
+func GoroutineHealthCheck(maxGoroutines int) healthcheck.Check <span class="cov9" title="5">{
+        return func() error </span><span class="cov9" title="5">{
                 count := runtime.NumGoroutine()
-                if count &gt; maxGoroutines </span><span class="cov1" title="1">{
+                if count &gt; maxGoroutines </span><span class="cov6" title="3">{
                         return fmt.Errorf("too many goroutines: %d", count)
                 }</span>
-                <span class="cov1" title="1">return nil</span>
+                <span class="cov4" title="2">return nil</span>
         }
 }
 
 // CustomHealthCheck creates a custom health check function
-func CustomHealthCheck(checkFunc func() error) healthcheck.Check <span class="cov10" title="4">{
+func CustomHealthCheck(checkFunc func() error) healthcheck.Check <span class="cov7" title="4">{
         return checkFunc
 }</span>
 
 // TimeoutHealthCheck wraps a health check with a timeout
-func TimeoutHealthCheck(check healthcheck.Check, timeout time.Duration) healthcheck.Check <span class="cov8" title="3">{
-        return func() error </span><span class="cov8" title="3">{
+func TimeoutHealthCheck(check healthcheck.Check, timeout time.Duration) healthcheck.Check <span class="cov10" title="6">{
+        return func() error </span><span class="cov9" title="5">{
                 done := make(chan error, 1)
-                go func() </span><span class="cov8" title="3">{
+                go func() </span><span class="cov9" title="5">{
                         done &lt;- check()
                 }</span>()
 
-                <span class="cov8" title="3">select </span>{
-                case err := &lt;-done:<span class="cov5" title="2">
+                <span class="cov9" title="5">select </span>{
+                case err := &lt;-done:<span class="cov4" title="2">
                         return err</span>
-                case &lt;-time.After(timeout):<span class="cov1" title="1">
+                case &lt;-time.After(timeout):<span class="cov6" title="3">
                         return fmt.Errorf("health check timed out after %v", timeout)</span>
                 }
         }
@@ -1845,7 +1845,7 @@ type ActuatorSecurityConfig struct {
 }
 
 // LoadConfig loads configuration from file and environment variables
-func LoadConfig(configPath string) (*Config, error) <span class="cov10" title="7">{
+func LoadConfig(configPath string) (*Config, error) <span class="cov10" title="11">{
         viper.SetConfigFile(configPath)
         viper.SetConfigType("yaml")
 
@@ -1856,23 +1856,23 @@ func LoadConfig(configPath string) (*Config, error) <span class="cov10" title="7
         setDefaults()
 
         // Read config file
-        if err := viper.ReadInConfig(); err != nil </span><span class="cov4" title="2">{
+        if err := viper.ReadInConfig(); err != nil </span><span class="cov3" title="2">{
                 return nil, fmt.Errorf("failed to read config file: %w", err)
         }</span>
 
         // Override with environment variables
-        <span class="cov8" title="5">overrideWithEnvVars()
+        <span class="cov9" title="9">overrideWithEnvVars()
 
         var config Config
         if err := viper.Unmarshal(&amp;config); err != nil </span><span class="cov0" title="0">{
                 return nil, fmt.Errorf("failed to unmarshal config: %w", err)
         }</span>
 
-        <span class="cov8" title="5">return &amp;config, nil</span>
+        <span class="cov9" title="9">return &amp;config, nil</span>
 }
 
 // setDefaults sets default configuration values
-func setDefaults() <span class="cov10" title="7">{
+func setDefaults() <span class="cov10" title="11">{
         viper.SetDefault("server.port", 8080)
         viper.SetDefault("server.grpc_port", 9090)
         viper.SetDefault("server.host", "0.0.0.0")
@@ -1958,142 +1958,142 @@ func setDefaults() <span class="cov10" title="7">{
 }</span>
 
 // overrideWithEnvVars overrides configuration with environment variables
-func overrideWithEnvVars() <span class="cov8" title="5">{
+func overrideWithEnvVars() <span class="cov9" title="9">{
         // Server
-        if serverPort := viper.GetInt("SERVER_PORT"); serverPort != 0 </span><span class="cov8" title="5">{
+        if serverPort := viper.GetInt("SERVER_PORT"); serverPort != 0 </span><span class="cov8" title="7">{
                 viper.Set("server.port", serverPort)
         }</span>
-        <span class="cov8" title="5">if serverHost := viper.GetString("SERVER_HOST"); serverHost != "" </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if serverHost := viper.GetString("SERVER_HOST"); serverHost != "" </span><span class="cov6" title="4">{
                 viper.Set("server.host", serverHost)
         }</span>
 
         // Database
-        <span class="cov8" title="5">if dbHost := viper.GetString("DB_HOST"); dbHost != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if dbHost := viper.GetString("DB_HOST"); dbHost != "" </span><span class="cov9" title="9">{
                 viper.Set("database.host", dbHost)
         }</span>
-        <span class="cov8" title="5">if dbPort := viper.GetInt("DB_PORT"); dbPort != 0 </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if dbPort := viper.GetInt("DB_PORT"); dbPort != 0 </span><span class="cov8" title="7">{
                 viper.Set("database.port", dbPort)
         }</span>
-        <span class="cov8" title="5">if dbName := viper.GetString("DB_NAME"); dbName != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if dbName := viper.GetString("DB_NAME"); dbName != "" </span><span class="cov9" title="9">{
                 viper.Set("database.name", dbName)
         }</span>
-        <span class="cov8" title="5">if dbUser := viper.GetString("DB_USER"); dbUser != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if dbUser := viper.GetString("DB_USER"); dbUser != "" </span><span class="cov9" title="9">{
                 viper.Set("database.user", dbUser)
         }</span>
-        <span class="cov8" title="5">if dbPassword := viper.GetString("DB_PASSWORD"); dbPassword != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if dbPassword := viper.GetString("DB_PASSWORD"); dbPassword != "" </span><span class="cov9" title="9">{
                 viper.Set("database.password", dbPassword)
         }</span>
 
         // Redis
-        <span class="cov8" title="5">if redisHost := viper.GetString("REDIS_HOST"); redisHost != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if redisHost := viper.GetString("REDIS_HOST"); redisHost != "" </span><span class="cov9" title="9">{
                 viper.Set("redis.host", redisHost)
         }</span>
-        <span class="cov8" title="5">if redisPort := viper.GetInt("REDIS_PORT"); redisPort != 0 </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if redisPort := viper.GetInt("REDIS_PORT"); redisPort != 0 </span><span class="cov8" title="7">{
                 viper.Set("redis.port", redisPort)
         }</span>
-        <span class="cov8" title="5">if redisPassword := viper.GetString("REDIS_PASSWORD"); redisPassword != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if redisPassword := viper.GetString("REDIS_PASSWORD"); redisPassword != "" </span><span class="cov9" title="9">{
                 viper.Set("redis.password", redisPassword)
         }</span>
 
         // JWT
-        <span class="cov8" title="5">if jwtSecret := viper.GetString("JWT_SECRET"); jwtSecret != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if jwtSecret := viper.GetString("JWT_SECRET"); jwtSecret != "" </span><span class="cov9" title="9">{
                 viper.Set("jwt.secret", jwtSecret)
         }</span>
 
         // OAuth
-        <span class="cov8" title="5">if googleClientID := viper.GetString("GOOGLE_CLIENT_ID"); googleClientID != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if googleClientID := viper.GetString("GOOGLE_CLIENT_ID"); googleClientID != "" </span><span class="cov9" title="9">{
                 viper.Set("oauth.google.client_id", googleClientID)
         }</span>
-        <span class="cov8" title="5">if googleClientSecret := viper.GetString("GOOGLE_CLIENT_SECRET"); googleClientSecret != "" </span><span class="cov8" title="5">{
+        <span class="cov9" title="9">if googleClientSecret := viper.GetString("GOOGLE_CLIENT_SECRET"); googleClientSecret != "" </span><span class="cov9" title="9">{
                 viper.Set("oauth.google.client_secret", googleClientSecret)
         }</span>
 
         // Actuator
-        <span class="cov8" title="5">if actuatorEnabled := viper.GetBool("ACTUATOR_ENABLED"); actuatorEnabled </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEnabled := viper.GetBool("ACTUATOR_ENABLED"); actuatorEnabled </span><span class="cov6" title="4">{
                 viper.Set("actuator.enabled", true)
         }</span>
-        <span class="cov8" title="5">if actuatorBasePath := viper.GetString("ACTUATOR_BASE_PATH"); actuatorBasePath != "" </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorBasePath := viper.GetString("ACTUATOR_BASE_PATH"); actuatorBasePath != "" </span><span class="cov6" title="4">{
                 viper.Set("actuator.base_path", actuatorBasePath)
         }</span>
-        <span class="cov8" title="5">if actuatorHealthEnabled := viper.GetBool("ACTUATOR_HEALTH_ENABLED"); actuatorHealthEnabled </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorHealthEnabled := viper.GetBool("ACTUATOR_HEALTH_ENABLED"); actuatorHealthEnabled </span><span class="cov6" title="4">{
                 viper.Set("actuator.health.enabled", true)
         }</span>
-        <span class="cov8" title="5">if actuatorHealthTimeout := viper.GetDuration("ACTUATOR_HEALTH_TIMEOUT"); actuatorHealthTimeout != 0 </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorHealthTimeout := viper.GetDuration("ACTUATOR_HEALTH_TIMEOUT"); actuatorHealthTimeout != 0 </span><span class="cov1" title="1">{
                 viper.Set("actuator.health.timeout", actuatorHealthTimeout)
         }</span>
-        <span class="cov8" title="5">if actuatorHealthMemoryThresholdPercent := viper.GetInt("ACTUATOR_HEALTH_MEMORY_THRESHOLD_PERCENT"); actuatorHealthMemoryThresholdPercent != 0 </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorHealthMemoryThresholdPercent := viper.GetInt("ACTUATOR_HEALTH_MEMORY_THRESHOLD_PERCENT"); actuatorHealthMemoryThresholdPercent != 0 </span><span class="cov1" title="1">{
                 viper.Set("actuator.health.memory_threshold_percent", actuatorHealthMemoryThresholdPercent)
         }</span>
-        <span class="cov8" title="5">if actuatorHealthGoroutineThreshold := viper.GetInt("ACTUATOR_HEALTH_GOROUTINE_THRESHOLD"); actuatorHealthGoroutineThreshold != 0 </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorHealthGoroutineThreshold := viper.GetInt("ACTUATOR_HEALTH_GOROUTINE_THRESHOLD"); actuatorHealthGoroutineThreshold != 0 </span><span class="cov1" title="1">{
                 viper.Set("actuator.health.goroutine_threshold", actuatorHealthGoroutineThreshold)
         }</span>
-        <span class="cov8" title="5">if actuatorHealthDiskSpaceThresholdGB := viper.GetInt64("ACTUATOR_HEALTH_DISK_SPACE_THRESHOLD_GB"); actuatorHealthDiskSpaceThresholdGB != 0 </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorHealthDiskSpaceThresholdGB := viper.GetInt64("ACTUATOR_HEALTH_DISK_SPACE_THRESHOLD_GB"); actuatorHealthDiskSpaceThresholdGB != 0 </span><span class="cov1" title="1">{
                 viper.Set("actuator.health.disk_space_threshold_gb", actuatorHealthDiskSpaceThresholdGB)
         }</span>
-        <span class="cov8" title="5">if actuatorMetricsEnabled := viper.GetBool("ACTUATOR_METRICS_ENABLED"); actuatorMetricsEnabled </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorMetricsEnabled := viper.GetBool("ACTUATOR_METRICS_ENABLED"); actuatorMetricsEnabled </span><span class="cov6" title="4">{
                 viper.Set("actuator.metrics.enabled", true)
         }</span>
-        <span class="cov8" title="5">if actuatorMetricsPrometheusEnabled := viper.GetBool("ACTUATOR_METRICS_PROMETHEUS_ENABLED"); actuatorMetricsPrometheusEnabled </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorMetricsPrometheusEnabled := viper.GetBool("ACTUATOR_METRICS_PROMETHEUS_ENABLED"); actuatorMetricsPrometheusEnabled </span><span class="cov6" title="4">{
                 viper.Set("actuator.metrics.prometheus_enabled", true)
         }</span>
-        <span class="cov8" title="5">if actuatorMetricsRequestTracking := viper.GetBool("ACTUATOR_METRICS_REQUEST_TRACKING"); actuatorMetricsRequestTracking </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorMetricsRequestTracking := viper.GetBool("ACTUATOR_METRICS_REQUEST_TRACKING"); actuatorMetricsRequestTracking </span><span class="cov6" title="4">{
                 viper.Set("actuator.metrics.request_tracking", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsHealth := viper.GetBool("ACTUATOR_ENDPOINTS_HEALTH"); actuatorEndpointsHealth </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsHealth := viper.GetBool("ACTUATOR_ENDPOINTS_HEALTH"); actuatorEndpointsHealth </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.health", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsInfo := viper.GetBool("ACTUATOR_ENDPOINTS_INFO"); actuatorEndpointsInfo </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsInfo := viper.GetBool("ACTUATOR_ENDPOINTS_INFO"); actuatorEndpointsInfo </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.info", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsMetrics := viper.GetBool("ACTUATOR_ENDPOINTS_METRICS"); actuatorEndpointsMetrics </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsMetrics := viper.GetBool("ACTUATOR_ENDPOINTS_METRICS"); actuatorEndpointsMetrics </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.metrics", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsPrometheus := viper.GetBool("ACTUATOR_ENDPOINTS_PROMETHEUS"); actuatorEndpointsPrometheus </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsPrometheus := viper.GetBool("ACTUATOR_ENDPOINTS_PROMETHEUS"); actuatorEndpointsPrometheus </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.prometheus", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsStatus := viper.GetBool("ACTUATOR_ENDPOINTS_STATUS"); actuatorEndpointsStatus </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsStatus := viper.GetBool("ACTUATOR_ENDPOINTS_STATUS"); actuatorEndpointsStatus </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.status", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsUptime := viper.GetBool("ACTUATOR_ENDPOINTS_UPTIME"); actuatorEndpointsUptime </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsUptime := viper.GetBool("ACTUATOR_ENDPOINTS_UPTIME"); actuatorEndpointsUptime </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.uptime", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsThreadDump := viper.GetBool("ACTUATOR_ENDPOINTS_THREAD_DUMP"); actuatorEndpointsThreadDump </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsThreadDump := viper.GetBool("ACTUATOR_ENDPOINTS_THREAD_DUMP"); actuatorEndpointsThreadDump </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.threaddump", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsHeapDump := viper.GetBool("ACTUATOR_ENDPOINTS_HEAP_DUMP"); actuatorEndpointsHeapDump </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsHeapDump := viper.GetBool("ACTUATOR_ENDPOINTS_HEAP_DUMP"); actuatorEndpointsHeapDump </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.heapdump", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsConfigProps := viper.GetBool("ACTUATOR_ENDPOINTS_CONFIG_PROPS"); actuatorEndpointsConfigProps </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsConfigProps := viper.GetBool("ACTUATOR_ENDPOINTS_CONFIG_PROPS"); actuatorEndpointsConfigProps </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.configprops", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsMappings := viper.GetBool("ACTUATOR_ENDPOINTS_MAPPINGS"); actuatorEndpointsMappings </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsMappings := viper.GetBool("ACTUATOR_ENDPOINTS_MAPPINGS"); actuatorEndpointsMappings </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.mappings", true)
         }</span>
-        <span class="cov8" title="5">if actuatorEndpointsLoggers := viper.GetBool("ACTUATOR_ENDPOINTS_LOGGERS"); actuatorEndpointsLoggers </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorEndpointsLoggers := viper.GetBool("ACTUATOR_ENDPOINTS_LOGGERS"); actuatorEndpointsLoggers </span><span class="cov0" title="0">{
                 viper.Set("actuator.endpoints.loggers", true)
         }</span>
-        <span class="cov8" title="5">if actuatorSecurityHealthPublic := viper.GetBool("ACTUATOR_SECURITY_HEALTH_PUBLIC"); actuatorSecurityHealthPublic </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorSecurityHealthPublic := viper.GetBool("ACTUATOR_SECURITY_HEALTH_PUBLIC"); actuatorSecurityHealthPublic </span><span class="cov0" title="0">{
                 viper.Set("actuator.security.health_public", true)
         }</span>
-        <span class="cov8" title="5">if actuatorSecurityMetricsPublic := viper.GetBool("ACTUATOR_SECURITY_METRICS_PUBLIC"); actuatorSecurityMetricsPublic </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorSecurityMetricsPublic := viper.GetBool("ACTUATOR_SECURITY_METRICS_PUBLIC"); actuatorSecurityMetricsPublic </span><span class="cov0" title="0">{
                 viper.Set("actuator.security.metrics_public", true)
         }</span>
-        <span class="cov8" title="5">if actuatorSecuritySensitiveEndpointsRestricted := viper.GetBool("ACTUATOR_SECURITY_SENSITIVE_ENDPOINTS_RESTRICTED"); actuatorSecuritySensitiveEndpointsRestricted </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorSecuritySensitiveEndpointsRestricted := viper.GetBool("ACTUATOR_SECURITY_SENSITIVE_ENDPOINTS_RESTRICTED"); actuatorSecuritySensitiveEndpointsRestricted </span><span class="cov0" title="0">{
                 viper.Set("actuator.security.sensitive_endpoints_restricted", true)
         }</span>
-        <span class="cov8" title="5">if actuatorSecurityAllowedIPs := viper.GetStringSlice("ACTUATOR_SECURITY_ALLOWED_IPS"); len(actuatorSecurityAllowedIPs) &gt; 0 </span><span class="cov0" title="0">{
+        <span class="cov9" title="9">if actuatorSecurityAllowedIPs := viper.GetStringSlice("ACTUATOR_SECURITY_ALLOWED_IPS"); len(actuatorSecurityAllowedIPs) &gt; 0 </span><span class="cov0" title="0">{
                 viper.Set("actuator.security.allowed_ips", actuatorSecurityAllowedIPs)
         }</span>
 }
 
 // GetDSN returns the database connection string
-func (c *DatabaseConfig) GetDSN() string <span class="cov4" title="2">{
+func (c *DatabaseConfig) GetDSN() string <span class="cov5" title="3">{
         return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
                 c.Host, c.Port, c.User, c.Password, c.Name, c.SSLMode)
 }</span>
 
 // GetRedisAddr returns the Redis address
-func (c *RedisConfig) GetRedisAddr() string <span class="cov4" title="2">{
+func (c *RedisConfig) GetRedisAddr() string <span class="cov6" title="4">{
         return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }</span>
 </pre>
@@ -2328,7 +2328,7 @@ type OAuthHandler struct {
 }
 
 // NewOAuthHandler creates a new OAuthHandler instance
-func NewOAuthHandler(cfg *config.Config) *OAuthHandler <span class="cov10" title="17">{
+func NewOAuthHandler(cfg *config.Config) *OAuthHandler <span class="cov10" title="35">{
         return &amp;OAuthHandler{
                 config: cfg,
         }
@@ -2346,7 +2346,7 @@ func NewOAuthHandler(cfg *config.Config) *OAuthHandler <span class="cov10" title
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /oauth/google/login [get]
-func (h *OAuthHandler) GoogleLogin(c *gin.Context) <span class="cov4" title="3">{
+func (h *OAuthHandler) GoogleLogin(c *gin.Context) <span class="cov5" title="5">{
         tenantID := c.Query("tenant_id")
         redirectURI := c.Query("redirect_uri")
 
@@ -2359,14 +2359,14 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) <span class="cov4" title="3">
         }</span>
 
         // Use custom redirect URI if provided, otherwise use default
-        <span class="cov3" title="2">callbackURL := h.config.OAuth.Google.RedirectURL
+        <span class="cov4" title="4">callbackURL := h.config.OAuth.Google.RedirectURL
         if redirectURI != "" </span><span class="cov1" title="1">{
                 callbackURL = redirectURI
         }</span>
 
         // TODO: Implement Google OAuth flow
         // For now, return a mock redirect URL
-        <span class="cov3" title="2">googleAuthURL := "https://accounts.google.com/oauth/authorize?client_id=" + h.config.OAuth.Google.ClientID + "&amp;redirect_uri=" + callbackURL + "&amp;scope=email profile&amp;response_type=code&amp;state=" + tenantID
+        <span class="cov4" title="4">googleAuthURL := "https://accounts.google.com/oauth/authorize?client_id=" + h.config.OAuth.Google.ClientID + "&amp;redirect_uri=" + callbackURL + "&amp;scope=email profile&amp;response_type=code&amp;state=" + tenantID
 
         c.JSON(http.StatusOK, gin.H{
                 "auth_url": googleAuthURL,
@@ -2388,12 +2388,12 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) <span class="cov4" title="3">
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /oauth/google/callback [get]
-func (h *OAuthHandler) GoogleCallback(c *gin.Context) <span class="cov4" title="3">{
+func (h *OAuthHandler) GoogleCallback(c *gin.Context) <span class="cov5" title="7">{
         code := c.Query("code")
         state := c.Query("state")
         oauthError := c.Query("error")
 
-        if oauthError != "" </span><span class="cov1" title="1">{
+        if oauthError != "" </span><span class="cov2" title="2">{
                 c.JSON(http.StatusBadRequest, ErrorResponse{
                         Error:   "oauth_error",
                         Message: "OAuth error: " + oauthError,
@@ -2401,7 +2401,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) <span class="cov4" title="
                 return
         }</span>
 
-        <span class="cov3" title="2">if code == "" </span><span class="cov1" title="1">{
+        <span class="cov5" title="5">if code == "" </span><span class="cov1" title="1">{
                 c.JSON(http.StatusBadRequest, ErrorResponse{
                         Error:   "missing_code",
                         Message: "Authorization code is required",
@@ -2410,7 +2410,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) <span class="cov4" title="
         }</span>
 
         // TODO: Implement Google OAuth token exchange
-        <span class="cov1" title="1">response := LoginResponse{
+        <span class="cov4" title="4">response := LoginResponse{
                 AccessToken:  "google-oauth-token",
                 RefreshToken: "google-refresh-token",
                 TokenType:    "Bearer",
@@ -2456,7 +2456,7 @@ type ClientCredentialsResponse struct {
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /oauth/token [post]
-func (h *OAuthHandler) ClientCredentials(c *gin.Context) <span class="cov4" title="3">{
+func (h *OAuthHandler) ClientCredentials(c *gin.Context) <span class="cov5" title="7">{
         var req ClientCredentialsRequest
         if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov1" title="1">{
                 c.JSON(http.StatusBadRequest, ErrorResponse{
@@ -2466,7 +2466,7 @@ func (h *OAuthHandler) ClientCredentials(c *gin.Context) <span class="cov4" titl
                 return
         }</span>
 
-        <span class="cov3" title="2">if req.GrantType != "client_credentials" </span><span class="cov1" title="1">{
+        <span class="cov5" title="6">if req.GrantType != "client_credentials" </span><span class="cov1" title="1">{
                 c.JSON(http.StatusBadRequest, ErrorResponse{
                         Error:   "unsupported_grant_type",
                         Message: "Only client_credentials grant type is supported",
@@ -2476,7 +2476,7 @@ func (h *OAuthHandler) ClientCredentials(c *gin.Context) <span class="cov4" titl
 
         // TODO: Implement client credentials validation
         // For now, return a mock response
-        <span class="cov1" title="1">response := ClientCredentialsResponse{
+        <span class="cov5" title="5">response := ClientCredentialsResponse{
                 AccessToken: "service-access-token",
                 TokenType:   "Bearer",
                 ExpiresIn:   3600,
@@ -2518,9 +2518,9 @@ type OneTimeTokenResponse struct {
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /oauth/one-time [post]
-func (h *OAuthHandler) CreateOneTimeToken(c *gin.Context) <span class="cov3" title="2">{
+func (h *OAuthHandler) CreateOneTimeToken(c *gin.Context) <span class="cov5" title="7">{
         var req OneTimeTokenRequest
-        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov1" title="1">{
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov3" title="3">{
                 c.JSON(http.StatusBadRequest, ErrorResponse{
                         Error:   "validation_error",
                         Message: err.Error(),
@@ -2529,7 +2529,7 @@ func (h *OAuthHandler) CreateOneTimeToken(c *gin.Context) <span class="cov3" tit
         }</span>
 
         // Validate required fields
-        <span class="cov1" title="1">if req.SessionID == "" </span><span class="cov0" title="0">{
+        <span class="cov4" title="4">if req.SessionID == "" </span><span class="cov0" title="0">{
                 c.JSON(http.StatusBadRequest, ErrorResponse{
                         Error:   "missing_session_id",
                         Message: "Session ID is required for one-time tokens",
@@ -2538,7 +2538,7 @@ func (h *OAuthHandler) CreateOneTimeToken(c *gin.Context) <span class="cov3" tit
         }</span>
 
         // Set default refresh window if not provided
-        <span class="cov1" title="1">if req.RefreshWindow == 0 </span><span class="cov0" title="0">{
+        <span class="cov4" title="4">if req.RefreshWindow == 0 </span><span class="cov2" title="2">{
                 req.RefreshWindow = 300 // 5 minutes default
         }</span>
 
@@ -2546,13 +2546,13 @@ func (h *OAuthHandler) CreateOneTimeToken(c *gin.Context) <span class="cov3" tit
         // Store in cache/database: token -&gt; {sessionID, maxUses, expiresAt, lastActivity, refreshWindow}
 
         // Build URL with session parameter
-        <span class="cov1" title="1">urlWithParams := req.URL
+        <span class="cov4" title="4">urlWithParams := req.URL
         if strings.Contains(urlWithParams, "?") </span><span class="cov0" title="0">{
                 urlWithParams += "&amp;"
-        }</span> else<span class="cov1" title="1"> {
+        }</span> else<span class="cov4" title="4"> {
                 urlWithParams += "?"
         }</span>
-        <span class="cov1" title="1">urlWithParams += fmt.Sprintf("token=one-time-token-123&amp;session=%s", req.SessionID)
+        <span class="cov4" title="4">urlWithParams += fmt.Sprintf("token=one-time-token-123&amp;session=%s", req.SessionID)
 
         response := OneTimeTokenResponse{
                 Token:         "one-time-token-123",
@@ -2579,7 +2579,7 @@ func (h *OAuthHandler) CreateOneTimeToken(c *gin.Context) <span class="cov3" tit
 // @Failure 401 {object} ErrorResponse
 // @Failure 410 {object} ErrorResponse
 // @Router /oauth/verify [get]
-func (h *OAuthHandler) VerifyOneTimeToken(c *gin.Context) <span class="cov4" title="3">{
+func (h *OAuthHandler) VerifyOneTimeToken(c *gin.Context) <span class="cov5" title="7">{
         token := c.Query("token")
         sessionID := c.Query("session")
 
@@ -2591,7 +2591,7 @@ func (h *OAuthHandler) VerifyOneTimeToken(c *gin.Context) <span class="cov4" tit
                 return
         }</span>
 
-        <span class="cov3" title="2">if sessionID == "" </span><span class="cov0" title="0">{
+        <span class="cov5" title="6">if sessionID == "" </span><span class="cov1" title="1">{
                 c.JSON(http.StatusBadRequest, ErrorResponse{
                         Error:   "missing_session",
                         Message: "Session ID is required",
@@ -2608,7 +2608,7 @@ func (h *OAuthHandler) VerifyOneTimeToken(c *gin.Context) <span class="cov4" tit
         // 6. Check if session is still active (within refresh window)
 
         // Mock validation - in real implementation, check against cache/database
-        <span class="cov3" title="2">if token != "one-time-token-123" || sessionID != "survey-session-456" </span><span class="cov1" title="1">{
+        <span class="cov5" title="5">if token != "one-time-token-123" || sessionID != "survey-session-456" </span><span class="cov2" title="2">{
                 c.JSON(http.StatusUnauthorized, ErrorResponse{
                         Error:   "invalid_token",
                         Message: "Invalid token or session combination",
@@ -2617,7 +2617,7 @@ func (h *OAuthHandler) VerifyOneTimeToken(c *gin.Context) <span class="cov4" tit
         }</span>
 
         // Return session-specific user data with refresh info
-        <span class="cov1" title="1">response := OneTimeSessionResponse{
+        <span class="cov3" title="3">response := OneTimeSessionResponse{
                 User: User{
                         ID:       "anonymous-user-123",
                         Email:    "anonymous@example.com",
@@ -2650,11 +2650,11 @@ func (h *OAuthHandler) VerifyOneTimeToken(c *gin.Context) <span class="cov4" tit
 // @Failure 401 {object} ErrorResponse
 // @Failure 410 {object} ErrorResponse
 // @Router /oauth/refresh [post]
-func (h *OAuthHandler) RefreshSession(c *gin.Context) <span class="cov3" title="2">{
+func (h *OAuthHandler) RefreshSession(c *gin.Context) <span class="cov5" title="6">{
         token := c.Query("token")
         sessionID := c.Query("session")
 
-        if token == "" || sessionID == "" </span><span class="cov1" title="1">{
+        if token == "" || sessionID == "" </span><span class="cov3" title="3">{
                 c.JSON(http.StatusBadRequest, ErrorResponse{
                         Error:   "missing_parameters",
                         Message: "Token and session ID are required",
@@ -2669,7 +2669,7 @@ func (h *OAuthHandler) RefreshSession(c *gin.Context) <span class="cov3" title="
         // 4. Return updated session info
 
         // Mock refresh - in real implementation, update cache/database
-        <span class="cov1" title="1">if token != "one-time-token-123" || sessionID != "survey-session-456" </span><span class="cov0" title="0">{
+        <span class="cov3" title="3">if token != "one-time-token-123" || sessionID != "survey-session-456" </span><span class="cov0" title="0">{
                 c.JSON(http.StatusUnauthorized, ErrorResponse{
                         Error:   "invalid_token",
                         Message: "Invalid token or session",
@@ -2677,7 +2677,7 @@ func (h *OAuthHandler) RefreshSession(c *gin.Context) <span class="cov3" title="
                 return
         }</span>
 
-        <span class="cov1" title="1">response := OneTimeSessionResponse{
+        <span class="cov3" title="3">response := OneTimeSessionResponse{
                 User: User{
                         ID:       "anonymous-user-123",
                         Email:    "anonymous@example.com",

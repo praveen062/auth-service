@@ -20,5 +20,19 @@
 --- PASS: TestConfig_Validation (0.00s)
 === RUN   TestConfig_CompleteConfiguration
 --- PASS: TestConfig_CompleteConfiguration (0.00s)
+=== RUN   TestLoadConfig_WithAllEnvironmentVariables
+--- PASS: TestLoadConfig_WithAllEnvironmentVariables (0.00s)
+=== RUN   TestLoadConfig_WithInvalidEnvironmentVariables
+--- PASS: TestLoadConfig_WithInvalidEnvironmentVariables (0.00s)
+=== RUN   TestLoadConfig_WithZeroEnvironmentVariables
+--- PASS: TestLoadConfig_WithZeroEnvironmentVariables (0.00s)
+=== RUN   TestDatabaseConfig_GetDSN_WithAllFields
+--- PASS: TestDatabaseConfig_GetDSN_WithAllFields (0.00s)
+=== RUN   TestRedisConfig_GetRedisAddr_WithPassword
+--- PASS: TestRedisConfig_GetRedisAddr_WithPassword (0.00s)
+=== RUN   TestRedisConfig_GetRedisAddr_WithCustomPort
+--- PASS: TestRedisConfig_GetRedisAddr_WithCustomPort (0.00s)
+=== RUN   TestConfig_DefaultValues_Comprehensive
+--- PASS: TestConfig_DefaultValues_Comprehensive (0.00s)
 PASS
 ok  	auth-service/internal/config	(cached)

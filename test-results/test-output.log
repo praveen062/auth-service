@@ -31,9 +31,61 @@
 --- PASS: TestMain_RedisAddr_Generation (0.00s)
 === RUN   TestMain_EnvironmentVariableOverride
 --- PASS: TestMain_EnvironmentVariableOverride (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIP
+--- PASS: TestIPAllowlistMiddleware_AllowedIP (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIPWithPort
+--- PASS: TestIPAllowlistMiddleware_AllowedIPWithPort (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIPSubnet
+--- PASS: TestIPAllowlistMiddleware_AllowedIPSubnet (0.00s)
+=== RUN   TestIPAllowlistMiddleware_DisallowedIP
+--- PASS: TestIPAllowlistMiddleware_DisallowedIP (0.00s)
+=== RUN   TestIPAllowlistMiddleware_EmptyAllowedIPs
+--- PASS: TestIPAllowlistMiddleware_EmptyAllowedIPs (0.00s)
+=== RUN   TestIPAllowlistMiddleware_NoRemoteAddr
+--- PASS: TestIPAllowlistMiddleware_NoRemoteAddr (0.00s)
+=== RUN   TestIPAllowlistMiddleware_IPv6Allowed
+--- PASS: TestIPAllowlistMiddleware_IPv6Allowed (0.00s)
+=== RUN   TestIPAllowlistMiddleware_IPv6Disallowed
+--- PASS: TestIPAllowlistMiddleware_IPv6Disallowed (0.00s)
+=== RUN   TestIPAllowlistMiddleware_MultipleAllowedIPs
+--- PASS: TestIPAllowlistMiddleware_MultipleAllowedIPs (0.00s)
+=== RUN   TestIPAllowlistMiddleware_InvalidIPFormat
+--- PASS: TestIPAllowlistMiddleware_InvalidIPFormat (0.00s)
+=== RUN   TestIPAllowlistMiddleware_EmptyRemoteAddr
+--- PASS: TestIPAllowlistMiddleware_EmptyRemoteAddr (0.00s)
+=== RUN   TestIPAllowlistMiddleware_Integration
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv4
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv4_Subnet
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv6
+=== RUN   TestIPAllowlistMiddleware_Integration/Disallowed_IPv4
+=== RUN   TestIPAllowlistMiddleware_Integration/Disallowed_IPv6
+=== RUN   TestIPAllowlistMiddleware_Integration/Empty_Remote_Addr
+=== RUN   TestIPAllowlistMiddleware_Integration/Invalid_Format
+--- PASS: TestIPAllowlistMiddleware_Integration (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv4 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv4_Subnet (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv6 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Disallowed_IPv4 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Disallowed_IPv6 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Empty_Remote_Addr (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Invalid_Format (0.00s)
+=== RUN   TestMain_ServerSetup
+--- PASS: TestMain_ServerSetup (0.00s)
+=== RUN   TestMain_ActuatorSetup
+--- PASS: TestMain_ActuatorSetup (0.00s)
+=== RUN   TestMain_HandlerSetup
+--- PASS: TestMain_HandlerSetup (0.00s)
+=== RUN   TestMain_SwaggerSetup
+--- PASS: TestMain_SwaggerSetup (0.00s)
+=== RUN   TestMain_ErrorHandling
+--- PASS: TestMain_ErrorHandling (0.00s)
+=== RUN   TestMain_AddressGeneration
+--- PASS: TestMain_AddressGeneration (0.00s)
+=== RUN   TestMain_PrintfStatements
+--- PASS: TestMain_PrintfStatements (0.00s)
 PASS
 coverage: 14.6% of statements
-ok  	auth-service/cmd/server	0.948s	coverage: 14.6% of statements
+ok  	auth-service/cmd/server	0.782s	coverage: 14.6% of statements
 === RUN   TestNewActuator
 --- PASS: TestNewActuator (0.00s)
 === RUN   TestActuator_Info
@@ -74,25 +126,97 @@ ok  	auth-service/cmd/server	0.948s	coverage: 14.6% of statements
 --- PASS: TestActuator_GetRuntimeStats (0.00s)
 === RUN   TestActuator_GetRequestStats
 --- PASS: TestActuator_GetRequestStats (0.00s)
-=== RUN   TestDatabaseHealthCheck
---- PASS: TestDatabaseHealthCheck (0.00s)
-=== RUN   TestRedisHealthCheck
---- PASS: TestRedisHealthCheck (0.00s)
-=== RUN   TestDiskSpaceHealthCheck
---- PASS: TestDiskSpaceHealthCheck (0.00s)
-=== RUN   TestMemoryHealthCheck
---- PASS: TestMemoryHealthCheck (0.00s)
-=== RUN   TestGoroutineHealthCheck
---- PASS: TestGoroutineHealthCheck (0.00s)
-=== RUN   TestCustomHealthCheck
---- PASS: TestCustomHealthCheck (0.00s)
-=== RUN   TestTimeoutHealthCheck
---- PASS: TestTimeoutHealthCheck (0.06s)
-=== RUN   TestTimeoutHealthCheckWithError
---- PASS: TestTimeoutHealthCheckWithError (0.00s)
+=== RUN   TestActuator_RegisterHealthCheck
+--- PASS: TestActuator_RegisterHealthCheck (0.00s)
+=== RUN   TestActuator_RegisterReadinessCheck
+--- PASS: TestActuator_RegisterReadinessCheck (0.00s)
+=== RUN   TestActuator_ConfigProps
+--- PASS: TestActuator_ConfigProps (0.00s)
+=== RUN   TestActuator_SetLoggerLevel_Success
+--- PASS: TestActuator_SetLoggerLevel_Success (0.00s)
+=== RUN   TestActuator_SetLoggerLevel_InvalidJSON
+--- PASS: TestActuator_SetLoggerLevel_InvalidJSON (0.00s)
+=== RUN   TestActuator_SetLoggerLevel_EmptyBody
+--- PASS: TestActuator_SetLoggerLevel_EmptyBody (0.00s)
+=== RUN   TestActuator_RegisterRoutes_AllEndpoints
+--- PASS: TestActuator_RegisterRoutes_AllEndpoints (0.00s)
+=== RUN   TestActuator_RecordRequest_WithMetrics
+--- PASS: TestActuator_RecordRequest_WithMetrics (0.00s)
+=== RUN   TestActuator_AppInfo_WithProperties
+--- PASS: TestActuator_AppInfo_WithProperties (0.00s)
+=== RUN   TestActuator_NewActuator_WithNilAppInfo
+--- PASS: TestActuator_NewActuator_WithNilAppInfo (0.00s)
+=== RUN   TestActuator_GetMemoryStats_Detailed
+--- PASS: TestActuator_GetMemoryStats_Detailed (0.00s)
+=== RUN   TestActuator_GetRuntimeStats_Detailed
+--- PASS: TestActuator_GetRuntimeStats_Detailed (0.00s)
+=== RUN   TestActuator_GetRequestStats_Detailed
+--- PASS: TestActuator_GetRequestStats_Detailed (0.00s)
+=== RUN   TestDatabaseHealthCheck_Success
+--- PASS: TestDatabaseHealthCheck_Success (0.00s)
+=== RUN   TestDatabaseHealthCheck_WithTimeout
+--- PASS: TestDatabaseHealthCheck_WithTimeout (0.00s)
+=== RUN   TestRedisHealthCheck_Success
+--- PASS: TestRedisHealthCheck_Success (0.00s)
+=== RUN   TestRedisHealthCheck_WithNilClient
+--- PASS: TestRedisHealthCheck_WithNilClient (0.00s)
+=== RUN   TestDiskSpaceHealthCheck_Success
+--- PASS: TestDiskSpaceHealthCheck_Success (0.00s)
+=== RUN   TestDiskSpaceHealthCheck_WithZeroSpace
+--- PASS: TestDiskSpaceHealthCheck_WithZeroSpace (0.00s)
+=== RUN   TestDiskSpaceHealthCheck_WithNegativeSpace
+--- PASS: TestDiskSpaceHealthCheck_WithNegativeSpace (0.00s)
+=== RUN   TestMemoryHealthCheck_Success
+--- PASS: TestMemoryHealthCheck_Success (0.00s)
+=== RUN   TestMemoryHealthCheck_WithLowThreshold
+--- PASS: TestMemoryHealthCheck_WithLowThreshold (0.00s)
+=== RUN   TestMemoryHealthCheck_WithZeroThreshold
+--- PASS: TestMemoryHealthCheck_WithZeroThreshold (0.00s)
+=== RUN   TestMemoryHealthCheck_WithNegativeThreshold
+--- PASS: TestMemoryHealthCheck_WithNegativeThreshold (0.00s)
+=== RUN   TestGoroutineHealthCheck_Success
+--- PASS: TestGoroutineHealthCheck_Success (0.00s)
+=== RUN   TestGoroutineHealthCheck_WithLowThreshold
+--- PASS: TestGoroutineHealthCheck_WithLowThreshold (0.00s)
+=== RUN   TestGoroutineHealthCheck_WithZeroThreshold
+--- PASS: TestGoroutineHealthCheck_WithZeroThreshold (0.00s)
+=== RUN   TestGoroutineHealthCheck_WithNegativeThreshold
+--- PASS: TestGoroutineHealthCheck_WithNegativeThreshold (0.00s)
+=== RUN   TestCustomHealthCheck_Success
+--- PASS: TestCustomHealthCheck_Success (0.00s)
+=== RUN   TestCustomHealthCheck_WithError
+--- PASS: TestCustomHealthCheck_WithError (0.00s)
+=== RUN   TestCustomHealthCheck_WithNilFunction
+--- PASS: TestCustomHealthCheck_WithNilFunction (0.00s)
+=== RUN   TestTimeoutHealthCheck_Success
+--- PASS: TestTimeoutHealthCheck_Success (0.01s)
+=== RUN   TestTimeoutHealthCheck_WithError
+--- PASS: TestTimeoutHealthCheck_WithError (0.01s)
+=== RUN   TestTimeoutHealthCheck_WithTimeout
+--- PASS: TestTimeoutHealthCheck_WithTimeout (0.05s)
+=== RUN   TestTimeoutHealthCheck_WithZeroTimeout
+--- PASS: TestTimeoutHealthCheck_WithZeroTimeout (0.00s)
+=== RUN   TestTimeoutHealthCheck_WithNegativeTimeout
+--- PASS: TestTimeoutHealthCheck_WithNegativeTimeout (0.00s)
+=== RUN   TestTimeoutHealthCheck_WithNilCheck
+--- PASS: TestTimeoutHealthCheck_WithNilCheck (0.00s)
+=== RUN   TestMemoryHealthCheck_Calculation
+--- PASS: TestMemoryHealthCheck_Calculation (0.00s)
+=== RUN   TestHealthCheck_Integration
+=== RUN   TestHealthCheck_Integration/memory
+=== RUN   TestHealthCheck_Integration/goroutines
+=== RUN   TestHealthCheck_Integration/disk
+=== RUN   TestHealthCheck_Integration/redis
+=== RUN   TestHealthCheck_Integration/custom
+--- PASS: TestHealthCheck_Integration (0.00s)
+    --- PASS: TestHealthCheck_Integration/memory (0.00s)
+    --- PASS: TestHealthCheck_Integration/goroutines (0.00s)
+    --- PASS: TestHealthCheck_Integration/disk (0.00s)
+    --- PASS: TestHealthCheck_Integration/redis (0.00s)
+    --- PASS: TestHealthCheck_Integration/custom (0.00s)
 PASS
-coverage: 91.7% of statements
-ok  	auth-service/internal/actuator	1.225s	coverage: 91.7% of statements
+coverage: 96.9% of statements
+ok  	auth-service/internal/actuator	1.269s	coverage: 96.9% of statements
 === RUN   TestLoadConfig_Success
 --- PASS: TestLoadConfig_Success (0.00s)
 === RUN   TestLoadConfig_FileNotFound
@@ -115,9 +239,23 @@ ok  	auth-service/internal/actuator	1.225s	coverage: 91.7% of statements
 --- PASS: TestConfig_Validation (0.00s)
 === RUN   TestConfig_CompleteConfiguration
 --- PASS: TestConfig_CompleteConfiguration (0.00s)
+=== RUN   TestLoadConfig_WithAllEnvironmentVariables
+--- PASS: TestLoadConfig_WithAllEnvironmentVariables (0.00s)
+=== RUN   TestLoadConfig_WithInvalidEnvironmentVariables
+--- PASS: TestLoadConfig_WithInvalidEnvironmentVariables (0.00s)
+=== RUN   TestLoadConfig_WithZeroEnvironmentVariables
+--- PASS: TestLoadConfig_WithZeroEnvironmentVariables (0.00s)
+=== RUN   TestDatabaseConfig_GetDSN_WithAllFields
+--- PASS: TestDatabaseConfig_GetDSN_WithAllFields (0.00s)
+=== RUN   TestRedisConfig_GetRedisAddr_WithPassword
+--- PASS: TestRedisConfig_GetRedisAddr_WithPassword (0.00s)
+=== RUN   TestRedisConfig_GetRedisAddr_WithCustomPort
+--- PASS: TestRedisConfig_GetRedisAddr_WithCustomPort (0.00s)
+=== RUN   TestConfig_DefaultValues_Comprehensive
+--- PASS: TestConfig_DefaultValues_Comprehensive (0.00s)
 PASS
-coverage: 83.4% of statements
-ok  	auth-service/internal/config	0.224s	coverage: 83.4% of statements
+coverage: 90.2% of statements
+ok  	auth-service/internal/config	0.446s	coverage: 90.2% of statements
 === RUN   TestAuthHandler_Login_Success
 --- PASS: TestAuthHandler_Login_Success (0.00s)
 === RUN   TestAuthHandler_Login_InvalidEmail
@@ -176,9 +314,57 @@ ok  	auth-service/internal/config	0.224s	coverage: 83.4% of statements
 --- PASS: TestOAuthHandler_RefreshSession_MissingSessionID (0.00s)
 === RUN   TestOAuthHandler_NewOAuthHandler
 --- PASS: TestOAuthHandler_NewOAuthHandler (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_WithAllFields
+--- PASS: TestOAuthHandler_CreateOneTimeToken_WithAllFields (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_WithDefaultValues
+--- PASS: TestOAuthHandler_CreateOneTimeToken_WithDefaultValues (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_WithInvalidJSON
+--- PASS: TestOAuthHandler_CreateOneTimeToken_WithInvalidJSON (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_WithEmptyBody
+--- PASS: TestOAuthHandler_CreateOneTimeToken_WithEmptyBody (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_WithAllFields
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_WithAllFields (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_WithMissingSessionID
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_WithMissingSessionID (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_WithInvalidToken
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_WithInvalidToken (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_WithAllFields
+--- PASS: TestOAuthHandler_RefreshSession_WithAllFields (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_WithInvalidJSON
+--- PASS: TestOAuthHandler_RefreshSession_WithInvalidJSON (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_WithEmptyBody
+--- PASS: TestOAuthHandler_RefreshSession_WithEmptyBody (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_WithScope
+--- PASS: TestOAuthHandler_ClientCredentials_WithScope (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_WithoutScope
+--- PASS: TestOAuthHandler_ClientCredentials_WithoutScope (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_WithEmptyScope
+--- PASS: TestOAuthHandler_ClientCredentials_WithEmptyScope (0.00s)
+=== RUN   TestOAuthHandler_GoogleLogin_WithEmptyRedirectURI
+--- PASS: TestOAuthHandler_GoogleLogin_WithEmptyRedirectURI (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_WithEmptyState
+--- PASS: TestOAuthHandler_GoogleCallback_WithEmptyState (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_WithOnlyCode
+--- PASS: TestOAuthHandler_GoogleCallback_WithOnlyCode (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_WithOnlyError
+--- PASS: TestOAuthHandler_GoogleCallback_WithOnlyError (0.00s)
+=== RUN   TestOAuthHandler_Integration
+=== RUN   TestOAuthHandler_Integration/GoogleLogin
+=== RUN   TestOAuthHandler_Integration/GoogleCallback
+=== RUN   TestOAuthHandler_Integration/ClientCredentials
+=== RUN   TestOAuthHandler_Integration/CreateOneTimeToken
+=== RUN   TestOAuthHandler_Integration/VerifyOneTimeToken
+=== RUN   TestOAuthHandler_Integration/RefreshSession
+--- PASS: TestOAuthHandler_Integration (0.00s)
+    --- PASS: TestOAuthHandler_Integration/GoogleLogin (0.00s)
+    --- PASS: TestOAuthHandler_Integration/GoogleCallback (0.00s)
+    --- PASS: TestOAuthHandler_Integration/ClientCredentials (0.00s)
+    --- PASS: TestOAuthHandler_Integration/CreateOneTimeToken (0.00s)
+    --- PASS: TestOAuthHandler_Integration/VerifyOneTimeToken (0.00s)
+    --- PASS: TestOAuthHandler_Integration/RefreshSession (0.00s)
 PASS
-coverage: 91.1% of statements
-ok  	auth-service/internal/handler/rest	1.530s	coverage: 91.1% of statements
+coverage: 94.4% of statements
+ok  	auth-service/internal/handler/rest	0.958s	coverage: 94.4% of statements
 === RUN   TestActuatorMiddleware
 --- PASS: TestActuatorMiddleware (0.00s)
 === RUN   TestHealthCheckMiddleware
@@ -210,7 +396,7 @@ ok  	auth-service/internal/handler/rest	1.530s	coverage: 91.1% of statements
 --- PASS: TestRBACMiddleware_DifferentTenants (0.00s)
 PASS
 coverage: 100.0% of statements
-ok  	auth-service/internal/middleware	0.639s	coverage: 100.0% of statements
+ok  	auth-service/internal/middleware	0.268s	coverage: 100.0% of statements
 === RUN   TestRole_Structure
 --- PASS: TestRole_Structure (0.00s)
 === RUN   TestRole_DefaultRole
@@ -295,7 +481,7 @@ ok  	auth-service/internal/middleware	0.639s	coverage: 100.0% of statements
     --- PASS: TestServiceRole_Validation/Empty_TenantID (0.00s)
 PASS
 coverage: [no statements]
-ok  	auth-service/internal/models	0.406s	coverage: [no statements]
+ok  	auth-service/internal/models	1.371s	coverage: [no statements]
 === RUN   TestRBACService_AssignRoleToUser_Success
     rbac_service_test.go:65: PASS:	AssignRoleToUser(context.backgroundCtx,string,string,string)
 --- PASS: TestRBACService_AssignRoleToUser_Success (0.00s)
@@ -357,4 +543,4 @@ ok  	auth-service/internal/models	0.406s	coverage: [no statements]
 --- PASS: TestRBACService_Integration_ServiceRoleAssignment (0.00s)
 PASS
 coverage: [no statements]
-ok  	auth-service/internal/service	1.326s	coverage: [no statements]
+ok  	auth-service/internal/service	1.548s	coverage: [no statements]

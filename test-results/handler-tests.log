@@ -56,5 +56,53 @@
 --- PASS: TestOAuthHandler_RefreshSession_MissingSessionID (0.00s)
 === RUN   TestOAuthHandler_NewOAuthHandler
 --- PASS: TestOAuthHandler_NewOAuthHandler (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_WithAllFields
+--- PASS: TestOAuthHandler_CreateOneTimeToken_WithAllFields (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_WithDefaultValues
+--- PASS: TestOAuthHandler_CreateOneTimeToken_WithDefaultValues (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_WithInvalidJSON
+--- PASS: TestOAuthHandler_CreateOneTimeToken_WithInvalidJSON (0.00s)
+=== RUN   TestOAuthHandler_CreateOneTimeToken_WithEmptyBody
+--- PASS: TestOAuthHandler_CreateOneTimeToken_WithEmptyBody (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_WithAllFields
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_WithAllFields (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_WithMissingSessionID
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_WithMissingSessionID (0.00s)
+=== RUN   TestOAuthHandler_VerifyOneTimeToken_WithInvalidToken
+--- PASS: TestOAuthHandler_VerifyOneTimeToken_WithInvalidToken (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_WithAllFields
+--- PASS: TestOAuthHandler_RefreshSession_WithAllFields (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_WithInvalidJSON
+--- PASS: TestOAuthHandler_RefreshSession_WithInvalidJSON (0.00s)
+=== RUN   TestOAuthHandler_RefreshSession_WithEmptyBody
+--- PASS: TestOAuthHandler_RefreshSession_WithEmptyBody (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_WithScope
+--- PASS: TestOAuthHandler_ClientCredentials_WithScope (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_WithoutScope
+--- PASS: TestOAuthHandler_ClientCredentials_WithoutScope (0.00s)
+=== RUN   TestOAuthHandler_ClientCredentials_WithEmptyScope
+--- PASS: TestOAuthHandler_ClientCredentials_WithEmptyScope (0.00s)
+=== RUN   TestOAuthHandler_GoogleLogin_WithEmptyRedirectURI
+--- PASS: TestOAuthHandler_GoogleLogin_WithEmptyRedirectURI (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_WithEmptyState
+--- PASS: TestOAuthHandler_GoogleCallback_WithEmptyState (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_WithOnlyCode
+--- PASS: TestOAuthHandler_GoogleCallback_WithOnlyCode (0.00s)
+=== RUN   TestOAuthHandler_GoogleCallback_WithOnlyError
+--- PASS: TestOAuthHandler_GoogleCallback_WithOnlyError (0.00s)
+=== RUN   TestOAuthHandler_Integration
+=== RUN   TestOAuthHandler_Integration/GoogleLogin
+=== RUN   TestOAuthHandler_Integration/GoogleCallback
+=== RUN   TestOAuthHandler_Integration/ClientCredentials
+=== RUN   TestOAuthHandler_Integration/CreateOneTimeToken
+=== RUN   TestOAuthHandler_Integration/VerifyOneTimeToken
+=== RUN   TestOAuthHandler_Integration/RefreshSession
+--- PASS: TestOAuthHandler_Integration (0.00s)
+    --- PASS: TestOAuthHandler_Integration/GoogleLogin (0.00s)
+    --- PASS: TestOAuthHandler_Integration/GoogleCallback (0.00s)
+    --- PASS: TestOAuthHandler_Integration/ClientCredentials (0.00s)
+    --- PASS: TestOAuthHandler_Integration/CreateOneTimeToken (0.00s)
+    --- PASS: TestOAuthHandler_Integration/VerifyOneTimeToken (0.00s)
+    --- PASS: TestOAuthHandler_Integration/RefreshSession (0.00s)
 PASS
 ok  	auth-service/internal/handler/rest	(cached)

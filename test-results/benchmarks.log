@@ -1,15 +1,15 @@
 PASS
-ok  	auth-service/cmd/server	0.369s
+ok  	auth-service/cmd/server	0.366s
 ?   	auth-service/docs	[no test files]
 PASS
-ok  	auth-service/internal/actuator	0.322s
+ok  	auth-service/internal/actuator	0.331s
 PASS
-ok  	auth-service/internal/config	0.215s
+ok  	auth-service/internal/config	0.223s
 PASS
-ok  	auth-service/internal/handler/rest	0.219s
+ok  	auth-service/internal/handler/rest	0.214s
 PASS
-ok  	auth-service/internal/middleware	0.245s
+ok  	auth-service/internal/middleware	0.248s
 PASS
-ok  	auth-service/internal/models	0.187s
+ok  	auth-service/internal/models	0.186s
 PASS
-ok  	auth-service/internal/service	0.190s
+ok  	auth-service/internal/service	0.186s

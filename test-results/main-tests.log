@@ -30,5 +30,57 @@
 --- PASS: TestMain_RedisAddr_Generation (0.00s)
 === RUN   TestMain_EnvironmentVariableOverride
 --- PASS: TestMain_EnvironmentVariableOverride (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIP
+--- PASS: TestIPAllowlistMiddleware_AllowedIP (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIPWithPort
+--- PASS: TestIPAllowlistMiddleware_AllowedIPWithPort (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIPSubnet
+--- PASS: TestIPAllowlistMiddleware_AllowedIPSubnet (0.00s)
+=== RUN   TestIPAllowlistMiddleware_DisallowedIP
+--- PASS: TestIPAllowlistMiddleware_DisallowedIP (0.00s)
+=== RUN   TestIPAllowlistMiddleware_EmptyAllowedIPs
+--- PASS: TestIPAllowlistMiddleware_EmptyAllowedIPs (0.00s)
+=== RUN   TestIPAllowlistMiddleware_NoRemoteAddr
+--- PASS: TestIPAllowlistMiddleware_NoRemoteAddr (0.00s)
+=== RUN   TestIPAllowlistMiddleware_IPv6Allowed
+--- PASS: TestIPAllowlistMiddleware_IPv6Allowed (0.00s)
+=== RUN   TestIPAllowlistMiddleware_IPv6Disallowed
+--- PASS: TestIPAllowlistMiddleware_IPv6Disallowed (0.00s)
+=== RUN   TestIPAllowlistMiddleware_MultipleAllowedIPs
+--- PASS: TestIPAllowlistMiddleware_MultipleAllowedIPs (0.00s)
+=== RUN   TestIPAllowlistMiddleware_InvalidIPFormat
+--- PASS: TestIPAllowlistMiddleware_InvalidIPFormat (0.00s)
+=== RUN   TestIPAllowlistMiddleware_EmptyRemoteAddr
+--- PASS: TestIPAllowlistMiddleware_EmptyRemoteAddr (0.00s)
+=== RUN   TestIPAllowlistMiddleware_Integration
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv4
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv4_Subnet
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv6
+=== RUN   TestIPAllowlistMiddleware_Integration/Disallowed_IPv4
+=== RUN   TestIPAllowlistMiddleware_Integration/Disallowed_IPv6
+=== RUN   TestIPAllowlistMiddleware_Integration/Empty_Remote_Addr
+=== RUN   TestIPAllowlistMiddleware_Integration/Invalid_Format
+--- PASS: TestIPAllowlistMiddleware_Integration (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv4 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv4_Subnet (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv6 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Disallowed_IPv4 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Disallowed_IPv6 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Empty_Remote_Addr (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Invalid_Format (0.00s)
+=== RUN   TestMain_ServerSetup
+--- PASS: TestMain_ServerSetup (0.00s)
+=== RUN   TestMain_ActuatorSetup
+--- PASS: TestMain_ActuatorSetup (0.00s)
+=== RUN   TestMain_HandlerSetup
+--- PASS: TestMain_HandlerSetup (0.00s)
+=== RUN   TestMain_SwaggerSetup
+--- PASS: TestMain_SwaggerSetup (0.00s)
+=== RUN   TestMain_ErrorHandling
+--- PASS: TestMain_ErrorHandling (0.00s)
+=== RUN   TestMain_AddressGeneration
+--- PASS: TestMain_AddressGeneration (0.00s)
+=== RUN   TestMain_PrintfStatements
+--- PASS: TestMain_PrintfStatements (0.00s)
 PASS
 ok  	auth-service/cmd/server	(cached)
