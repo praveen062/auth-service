@@ -81,4 +81,4 @@
     --- PASS: TestServiceRole_Validation/Empty_RoleID (0.00s)
     --- PASS: TestServiceRole_Validation/Empty_TenantID (0.00s)
 PASS
-ok  	auth-service/internal/models	0.278s
+ok  	auth-service/internal/models	(cached)

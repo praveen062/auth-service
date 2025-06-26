@@ -67,7 +67,7 @@
 				
 				<option value="file5">auth-service/internal/config/service_config.go (0.0%)</option>
 				
-				<option value="file6">auth-service/internal/handler/rest/auth_handler.go (72.5%)</option>
+				<option value="file6">auth-service/internal/handler/rest/auth_handler.go (85.3%)</option>
 				
 				<option value="file7">auth-service/internal/handler/rest/mfa_handler.go (0.0%)</option>
 				
@@ -97,7 +97,7 @@
 				
 				<option value="file20">auth-service/internal/service/notification_client.go (6.9%)</option>
 				
-				<option value="file21">auth-service/internal/service/otp_service.go (58.7%)</option>
+				<option value="file21">auth-service/internal/service/otp_service.go (57.3%)</option>
 				
 				<option value="file22">auth-service/internal/service/subscription_client.go (7.1%)</option>
 				
@@ -1785,6 +1785,7 @@ type Config struct {
         OneTime  OneTimeConfig  `mapstructure:"one_time_auth"`
         Actuator ActuatorConfig `mapstructure:"actuator"`
         Services ServiceConfig  `mapstructure:"services"`
+        OTP      OTPConfig      `mapstructure:"otp"`
 }
 
 // ServerConfig holds server configuration
@@ -1920,12 +1921,20 @@ type OneTimeConfig struct {
 
 // ActuatorConfig holds actuator configuration
 type ActuatorConfig struct {
-        Enabled          bool                   `mapstructure:"enabled"`
-        BasePath         string                 `mapstructure:"base_path"`
-        Health           HealthConfig           `mapstructure:"health"`
-        Metrics          MetricsConfig          `mapstructure:"metrics"`
-        Endpoints        EndpointsConfig        `mapstructure:"endpoints"`
-        ActuatorSecurity ActuatorSecurityConfig `mapstructure:"security"`
+        Enabled   bool                   `mapstructure:"enabled"`
+        BasePath  string                 `mapstructure:"base_path"`
+        Health    HealthConfig           `mapstructure:"health"`
+        Metrics   MetricsConfig          `mapstructure:"metrics"`
+        Endpoints EndpointsConfig        `mapstructure:"endpoints"`
+        Security  ActuatorSecurityConfig `mapstructure:"security"`
+}
+
+// ActuatorSecurityConfig holds actuator security configuration
+type ActuatorSecurityConfig struct {
+        HealthPublic                 bool     `mapstructure:"health_public"`
+        MetricsPublic                bool     `mapstructure:"metrics_public"`
+        SensitiveEndpointsRestricted bool     `mapstructure:"sensitive_endpoints_restricted"`
+        AllowedIPs                   []string `mapstructure:"allowed_ips"`
 }
 
 // HealthConfig holds health check configuration
@@ -1959,12 +1968,14 @@ type EndpointsConfig struct {
         Loggers     bool `mapstructure:"loggers"`
 }
 
-// ActuatorSecurityConfig holds actuator security configuration
-type ActuatorSecurityConfig struct {
-        HealthPublic                 bool     `mapstructure:"health_public"`
-        MetricsPublic                bool     `mapstructure:"metrics_public"`
-        SensitiveEndpointsRestricted bool     `mapstructure:"sensitive_endpoints_restricted"`
-        AllowedIPs                   []string `mapstructure:"allowed_ips"`
+// OTPConfig holds OTP configuration
+type OTPConfig struct {
+        DefaultDigitLength       int `yaml:"default_digit_length" json:"default_digit_length"`
+        MinDigitLength           int `yaml:"min_digit_length" json:"min_digit_length"`
+        MaxDigitLength           int `yaml:"max_digit_length" json:"max_digit_length"`
+        DefaultExpirationMinutes int `yaml:"default_expiration_minutes" json:"default_expiration_minutes"`
+        MaxAttempts              int `yaml:"max_attempts" json:"max_attempts"`
+        RateLimitPerHour         int `yaml:"rate_limit_per_hour" json:"rate_limit_per_hour"`
 }
 
 // LoadConfig loads configuration from file and environment variables
@@ -2437,7 +2448,7 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
 
         // Get tenant information from context (set by middleware)
         <span class="cov1" title="1">tenantInterface := middleware.GetTenant(c)
-        if tenantInterface == nil </span><span class="cov1" title="1">{
+        if tenantInterface == nil </span><span class="cov0" title="0">{
                 reqLogger.Error("Tenant context missing")
                 c.JSON(http.StatusInternalServerError, ErrorResponse{
                         Error:   "tenant_context_missing",
@@ -2446,7 +2457,7 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
                 return
         }</span>
 
-        <span class="cov0" title="0">tenant, ok := tenantInterface.(*models.Tenant)
+        <span class="cov1" title="1">tenant, ok := tenantInterface.(*models.Tenant)
         if !ok </span><span class="cov0" title="0">{
                 reqLogger.Error("Invalid tenant type in context")
                 c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -2457,13 +2468,13 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
         }</span>
 
         // Use tenant ID from context if not provided in request
-        <span class="cov0" title="0">tenantID := req.TenantID
+        <span class="cov1" title="1">tenantID := req.TenantID
         if tenantID == "" </span><span class="cov0" title="0">{
                 tenantID = tenant.ID
         }</span>
 
         // Verify tenant ID matches
-        <span class="cov0" title="0">if tenantID != tenant.ID </span><span class="cov0" title="0">{
+        <span class="cov1" title="1">if tenantID != tenant.ID </span><span class="cov0" title="0">{
                 reqLogger.AuthFailure(req.Email, tenantID, "password", "tenant_mismatch")
                 c.JSON(http.StatusForbidden, ErrorResponse{
                         Error:   "tenant_mismatch",
@@ -2472,7 +2483,7 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
                 return
         }</span>
 
-        <span class="cov0" title="0">reqLogger.Info("Login validation passed",
+        <span class="cov1" title="1">reqLogger.Info("Login validation passed",
                 zap.String("email", req.Email),
                 zap.String("tenant_id", tenantID),
                 zap.String("tenant_name", tenant.Name),
@@ -4072,10 +4083,11 @@ import (
 type TenantHandler struct {
         tenantService service.TenantService
         logger        *logger.Logger
+        otpService    service.OTPService
 }
 
 // NewTenantHandler creates a new TenantHandler instance
-func NewTenantHandler(tenantService service.TenantService, cfg *config.Config) *TenantHandler <span class="cov0" title="0">{
+func NewTenantHandler(tenantService service.TenantService, cfg *config.Config, otpService service.OTPService) *TenantHandler <span class="cov0" title="0">{
         // Initialize logger for tenant handler
         appLogger, err := logger.NewLogger(&amp;cfg.Logging)
         if err != nil </span><span class="cov0" title="0">{
@@ -4086,15 +4098,11 @@ func NewTenantHandler(tenantService service.TenantService, cfg *config.Config) *
         <span class="cov0" title="0">return &amp;TenantHandler{
                 tenantService: tenantService,
                 logger:        appLogger,
+                otpService:    otpService,
         }</span>
 }
 
-// CreateTenantRequest represents the tenant creation request
-type CreateTenantRequest struct {
-        Name   string `json:"name" binding:"required" example:"Acme Corporation"`
-        Domain string `json:"domain" binding:"required" example:"acme.com"`
-        Plan   string `json:"plan" example:"pro"` // basic, pro, enterprise
-}
+// Note: Using CreateTenantRequest from models package
 
 // UpdateTenantRequest represents the tenant update request
 type UpdateTenantRequest struct {
@@ -4136,7 +4144,7 @@ type TenantStatsResponse struct {
 // @Tags Tenants
 // @Accept json
 // @Produce json
-// @Param request body CreateTenantRequest true "Tenant creation data"
+// @Param request body models.CreateTenantRequest true "Tenant creation data"
 // @Success 201 {object} TenantResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
@@ -4163,7 +4171,7 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) <span class="cov0" title="0
                 zap.String("method", "POST"),
         )
 
-        var req CreateTenantRequest
+        var req models.CreateTenantRequest
         if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
                 reqLogger.Error("Tenant creation validation failed", zap.Error(err))
 
@@ -4173,6 +4181,34 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) <span class="cov0" title="0
                 })
                 return
         }</span>
+
+        // Validate required fields
+        <span class="cov0" title="0">if req.Name == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "MISSING_FIELDS",
+                        Message: "Tenant name is required",
+                })
+                return
+        }</span>
+
+        // Validate OTP configuration if provided
+        <span class="cov0" title="0">if req.OTPConfig != nil </span><span class="cov0" title="0">{
+                if err := h.otpService.ValidateTenantOnboardingConfig(req.OTPConfig); err != nil </span><span class="cov0" title="0">{
+                        // Check if it's a structured API error
+                        if apiError, ok := err.(*models.APIError); ok </span><span class="cov0" title="0">{
+                                c.JSON(apiError.HTTPStatus, ErrorResponse{
+                                        Error:   string(apiError.Code),
+                                        Message: apiError.Message,
+                                })
+                        }</span> else<span class="cov0" title="0"> {
+                                c.JSON(http.StatusBadRequest, ErrorResponse{
+                                        Error:   "INVALID_OTP_CONFIG",
+                                        Message: err.Error(),
+                                })
+                        }</span>
+                        <span class="cov0" title="0">return</span>
+                }
+        }
 
         <span class="cov0" title="0">reqLogger.Info("Tenant creation validation passed",
                 zap.String("name", req.Name),
@@ -6095,6 +6131,7 @@ type OTPService interface {
         GetSMSUsageInfo(tenantID string) (*models.SMSUsageInfo, error)
         ResetBillingCycle(tenantID string) error
         TriggerTwoFactorAuth(ctx context.Context, req *models.TwoFactorAuthRequest) (*models.TwoFactorAuthResponse, error)
+        ValidateTenantOnboardingConfig(config *models.TenantOTPConfig) error
 }
 
 type otpService struct {
@@ -6144,13 +6181,13 @@ func (s *otpService) GenerateAndSendOTP(req *models.OTPRequest, config *models.T
 
         // Validate that at least one field is provided
         if req.Email == "" &amp;&amp; req.Mobile == "" </span><span class="cov0" title="0">{
-                return nil, fmt.Errorf("either email or mobile number is required")
+                return nil, models.CreateError(models.ErrorCodeMissingFields, "either email or mobile number is required")
         }</span>
 
         // Determine field type and validate
         <span class="cov7" title="17">fieldType, err := s.determineFieldType(req)
         if err != nil </span><span class="cov0" title="0">{
-                return nil, err
+                return nil, models.CreateError(models.ErrorCodeInvalidRequest, err.Error())
         }</span>
 
         // Determine delivery method based on field type and tenant config
@@ -6158,43 +6195,35 @@ func (s *otpService) GenerateAndSendOTP(req *models.OTPRequest, config *models.T
 
         // Validate that the chosen method is enabled for the tenant
         if !s.isDeliveryMethodEnabled(deliveryMethod, config) </span><span class="cov0" title="0">{
-                return nil, fmt.Errorf("delivery method %s is not enabled for this tenant", deliveryMethod)
+                return nil, models.CreateError(models.ErrorCodeFeatureDisabled,
+                        fmt.Sprintf("delivery method %s is not enabled for this tenant", deliveryMethod))
         }</span>
 
         // Validate field type against tenant configuration
         <span class="cov7" title="17">if !s.isFieldTypeAllowed(fieldType, config) </span><span class="cov0" title="0">{
-                return nil, fmt.Errorf("field type %s is not allowed for this tenant", fieldType)
+                return nil, models.CreateError(models.ErrorCodeFeatureDisabled,
+                        fmt.Sprintf("field type %s is not allowed for this tenant", fieldType))
         }</span>
 
         // Check SMS limits if SMS delivery is requested
         <span class="cov7" title="17">if deliveryMethod == models.OTPDeliverySMS || deliveryMethod == models.OTPDeliveryBoth </span><span class="cov0" title="0">{
                 if err := s.checkSMSLimit(config); err != nil </span><span class="cov0" title="0">{
-                        return nil, err
+                        return nil, models.CreateError(models.ErrorCode2FAQuotaExceeded, err.Error())
                 }</span>
         }
 
         // Generate OTP with tenant-specific digit length
-        <span class="cov7" title="17">digitLength := config.OTPDigitLength
-        if digitLength == 0 </span><span class="cov1" title="1">{
-                digitLength = 6 // default to 6 digits
+        <span class="cov7" title="17">code, digitLength, err := s.generateOTP(config)
+        if err != nil </span><span class="cov5" title="6">{
+                return nil, err
         }</span>
 
-        // Validate digit length (between 4 and 10 digits for security)
-        <span class="cov7" title="17">if digitLength &lt; 4 || digitLength &gt; 10 </span><span class="cov4" title="5">{
-                return nil, fmt.Errorf("invalid OTP digit length: %d (must be between 4 and 10)", digitLength)
-        }</span>
-
-        // Calculate min and max values for the digit length
-        <span class="cov6" title="12">min := int(math.Pow10(digitLength - 1)) // e.g., for 4 digits: 1000
-        max := int(math.Pow10(digitLength)) - 1 // e.g., for 4 digits: 9999
-
-        code := fmt.Sprintf("%0*d", digitLength, randomInt(min, max))
-        expirationMinutes := config.OTPExpirationMinutes
-        if expirationMinutes == 0 </span><span class="cov5" title="8">{
+        <span class="cov6" title="11">expirationMinutes := config.OTPExpirationMinutes
+        if expirationMinutes == 0 </span><span class="cov5" title="7">{
                 expirationMinutes = 5 // default 5 minutes
         }</span>
 
-        <span class="cov6" title="12">record := &amp;models.OTPRecord{
+        <span class="cov6" title="11">record := &amp;models.OTPRecord{
                 Email:          req.Email,
                 Mobile:         req.Mobile,
                 TenantID:       req.TenantID,
@@ -6212,11 +6241,11 @@ func (s *otpService) GenerateAndSendOTP(req *models.OTPRequest, config *models.T
         // Track usage and send OTP
         var smsUsageInfo *models.SMSUsageInfo
         switch deliveryMethod </span>{
-        case models.OTPDeliveryEmail:<span class="cov6" title="12">
-                if fieldType == models.OTPFieldEmail </span><span class="cov6" title="12">{
+        case models.OTPDeliveryEmail:<span class="cov6" title="11">
+                if fieldType == models.OTPFieldEmail </span><span class="cov6" title="11">{
                         s.sendEmailOTP(req.Email, code, req.TenantID)
                 }</span> else<span class="cov0" title="0"> {
-                        return nil, fmt.Errorf("email delivery method requires email field type")
+                        return nil, models.CreateError(models.ErrorCodeInvalidRequest, "email delivery method requires email field type")
                 }</span>
         case models.OTPDeliverySMS:<span class="cov0" title="0">
                 if fieldType == models.OTPFieldMobile </span><span class="cov0" title="0">{
@@ -6224,7 +6253,7 @@ func (s *otpService) GenerateAndSendOTP(req *models.OTPRequest, config *models.T
                         s.incrementSMSUsage(config)
                         smsUsageInfo = s.getSMSUsageInfo(config)
                 }</span> else<span class="cov0" title="0"> {
-                        return nil, fmt.Errorf("SMS delivery method requires mobile field type")
+                        return nil, models.CreateError(models.ErrorCodeInvalidRequest, "SMS delivery method requires mobile field type")
                 }</span>
         case models.OTPDeliveryBoth:<span class="cov0" title="0">
                 if req.Email != "" </span><span class="cov0" title="0">{
@@ -6237,7 +6266,7 @@ func (s *otpService) GenerateAndSendOTP(req *models.OTPRequest, config *models.T
                 }</span>
         }
 
-        <span class="cov6" title="12">availableMethods := s.getAvailableMethods(config)
+        <span class="cov6" title="11">availableMethods := s.getAvailableMethods(config)
         availableFields := s.getAvailableFields(config)
 
         return &amp;models.OTPResponse{
@@ -6336,7 +6365,7 @@ func (s *otpService) GetTenantOTPConfig(tenantID string) (*models.TenantOTPConfi
                         OTPExpirationMinutes:  5,
                         OTPDigitLength:        8, // 8-digit OTP for enterprise plan
                         MaxOTPAttempts:        3,
-                        RateLimitPerHour:      5,
+                        RateLimitPerHour:      20,
                         MonthlySMSLimit:       10000, // 10,000 SMS per month
                         CurrentSMSUsage:       0,
                         SMSCostPerMessage:     0.05,
@@ -6353,15 +6382,20 @@ func (s *otpService) GetTenantOTPConfig(tenantID string) (*models.TenantOTPConfi
                         AllowUserChoice:       false,
                         AllowFieldChoice:      false,
                         OTPExpirationMinutes:  5,
-                        OTPDigitLength:        6, // Default to 6-digit OTP
+                        OTPDigitLength:        6, // Default 6-digit OTP
                         MaxOTPAttempts:        3,
-                        RateLimitPerHour:      5,
+                        RateLimitPerHour:      10,
                         MonthlySMSLimit:       0,
                         CurrentSMSUsage:       0,
                         SMSCostPerMessage:     0.05,
                         BillingCycleStart:     time.Now().Truncate(24 * time.Hour),
                 }</span>
         }
+
+        // Validate the configuration before returning
+        <span class="cov6" title="10">if err := s.validateTenantOTPConfig(config); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid tenant OTP configuration for %s: %w", tenantID, err)
+        }</span>
 
         // Check if we need to reset billing cycle
         <span class="cov6" title="10">s.checkAndResetBillingCycle(config)
@@ -6373,6 +6407,27 @@ func (s *otpService) GetTenantOTPConfig(tenantID string) (*models.TenantOTPConfi
         }</span>
 
         <span class="cov6" title="10">return config, nil</span>
+}
+
+// ValidateTenantOnboardingConfig validates OTP configuration during tenant onboarding
+func (s *otpService) ValidateTenantOnboardingConfig(config *models.TenantOTPConfig) error <span class="cov0" title="0">{
+        // Use the same validation logic
+        if err := s.validateTenantOTPConfig(config); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Additional onboarding-specific validations
+        <span class="cov0" title="0">if config.Plan == "" </span><span class="cov0" title="0">{
+                return models.CreateError(models.ErrorCodeMissingFields, "plan is required for tenant onboarding")
+        }</span>
+
+        // Ensure digit length is explicitly set (not defaulted)
+        <span class="cov0" title="0">if config.OTPDigitLength == 0 </span><span class="cov0" title="0">{
+                return models.CreateError(models.ErrorCodeMissingFields,
+                        "OTP digit length must be explicitly specified during tenant onboarding (cannot be 0)")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
 }
 
 // GetSMSUsageInfo returns SMS usage information for a tenant
@@ -6580,37 +6635,37 @@ func (s *otpService) isFieldTypeAllowed(fieldType models.OTPFieldType, config *m
         }
 }
 
-func (s *otpService) getAvailableMethods(config *models.TenantOTPConfig) []models.OTPDeliveryMethod <span class="cov6" title="12">{
+func (s *otpService) getAvailableMethods(config *models.TenantOTPConfig) []models.OTPDeliveryMethod <span class="cov6" title="11">{
         var methods []models.OTPDeliveryMethod
-        if config.EnableEmailOTP </span><span class="cov6" title="12">{
+        if config.EnableEmailOTP </span><span class="cov6" title="11">{
                 methods = append(methods, models.OTPDeliveryEmail)
         }</span>
-        <span class="cov6" title="12">if config.EnableSMSOTP </span><span class="cov2" title="2">{
+        <span class="cov6" title="11">if config.EnableSMSOTP </span><span class="cov2" title="2">{
                 methods = append(methods, models.OTPDeliverySMS)
         }</span>
-        <span class="cov6" title="12">if config.EnableEmailOTP &amp;&amp; config.EnableSMSOTP </span><span class="cov2" title="2">{
+        <span class="cov6" title="11">if config.EnableEmailOTP &amp;&amp; config.EnableSMSOTP </span><span class="cov2" title="2">{
                 methods = append(methods, models.OTPDeliveryBoth)
         }</span>
-        <span class="cov6" title="12">if config.AllowUserChoice </span><span class="cov2" title="2">{
+        <span class="cov6" title="11">if config.AllowUserChoice </span><span class="cov2" title="2">{
                 methods = append(methods, models.OTPDeliveryUserChoice)
         }</span>
-        <span class="cov6" title="12">return methods</span>
+        <span class="cov6" title="11">return methods</span>
 }
 
-func (s *otpService) getAvailableFields(config *models.TenantOTPConfig) []models.OTPFieldType <span class="cov6" title="12">{
+func (s *otpService) getAvailableFields(config *models.TenantOTPConfig) []models.OTPFieldType <span class="cov6" title="11">{
         var fields []models.OTPFieldType
-        if config.EnableEmailOTP </span><span class="cov6" title="12">{
+        if config.EnableEmailOTP </span><span class="cov6" title="11">{
                 fields = append(fields, models.OTPFieldEmail)
         }</span>
-        <span class="cov6" title="12">if config.EnableSMSOTP </span><span class="cov2" title="2">{
+        <span class="cov6" title="11">if config.EnableSMSOTP </span><span class="cov2" title="2">{
                 fields = append(fields, models.OTPFieldMobile)
         }</span>
-        <span class="cov6" title="12">return fields</span>
+        <span class="cov6" title="11">return fields</span>
 }
 
-func (s *otpService) generateKey(req *models.OTPRequest, fieldType models.OTPFieldType) string <span class="cov6" title="12">{
+func (s *otpService) generateKey(req *models.OTPRequest, fieldType models.OTPFieldType) string <span class="cov6" title="11">{
         switch fieldType </span>{
-        case models.OTPFieldEmail:<span class="cov6" title="12">
+        case models.OTPFieldEmail:<span class="cov6" title="11">
                 return req.Email + ":" + req.TenantID</span>
         case models.OTPFieldMobile:<span class="cov0" title="0">
                 return req.Mobile + ":" + req.TenantID</span>
@@ -6630,7 +6685,7 @@ func (s *otpService) generateKeyFromVerify(req *models.OTPVerifyRequest, fieldTy
         }
 }
 
-func (s *otpService) sendEmailOTP(email, code, tenantID string) <span class="cov6" title="12">{
+func (s *otpService) sendEmailOTP(email, code, tenantID string) <span class="cov6" title="11">{
         // For demo: log to console (replace with email service)
         log.Printf("[OTP-EMAIL] Sent OTP %s to %s (tenant: %s)", code, email, tenantID)
 }</span>
@@ -6640,7 +6695,7 @@ func (s *otpService) sendSMSOTP(mobile, code, tenantID string) <span class="cov0
         log.Printf("[OTP-SMS] Sent OTP %s to %s (tenant: %s)", code, mobile, tenantID)
 }</span>
 
-func randomInt(min, max int) int <span class="cov7" title="18">{
+func randomInt(min, max int) int <span class="cov7" title="17">{
         b := make([]byte, 2)
         rand.Read(b)
         return min + int(b[0])%((max-min)+1)
@@ -6789,20 +6844,30 @@ func (s *otpService) checkSubscriptionValidation(resp *models.SubscriptionValida
 }
 
 // generateOTP generates OTP with tenant-specific digit length
-func (s *otpService) generateOTP(config *models.TenantOTPConfig) (string, int, error) <span class="cov5" title="6">{
+func (s *otpService) generateOTP(config *models.TenantOTPConfig) (string, int, error) <span class="cov8" title="23">{
         digitLength := config.OTPDigitLength
-        if digitLength == 0 </span><span class="cov0" title="0">{
-                digitLength = 6 // default to 6 digits
+
+        // Load system configuration for defaults and validation
+        const (
+                MinDigitLength = 4
+                MaxDigitLength = 10
+        )
+
+        // STRICT VALIDATION - No fallbacks, configuration MUST be valid
+        if digitLength &lt;= 0 </span><span class="cov1" title="1">{
+                return "", 0, models.CreateError(models.ErrorCodeInvalidRequest,
+                        fmt.Sprintf("OTP digit length cannot be 0 or negative, got %d", digitLength))
         }</span>
 
-        // Validate digit length (between 4 and 10 digits for security)
-        <span class="cov5" title="6">if digitLength &lt; 4 || digitLength &gt; 10 </span><span class="cov0" title="0">{
+        // Validate digit length range
+        <span class="cov8" title="22">if digitLength &lt; MinDigitLength || digitLength &gt; MaxDigitLength </span><span class="cov4" title="5">{
                 return "", 0, models.CreateError(models.ErrorCodeInvalidRequest,
-                        fmt.Sprintf("invalid OTP digit length: %d (must be between 4 and 10)", digitLength))
+                        fmt.Sprintf("invalid OTP digit length: %d (must be between %d and %d)",
+                                digitLength, MinDigitLength, MaxDigitLength))
         }</span>
 
         // Calculate min and max values for the digit length
-        <span class="cov5" title="6">min := int(math.Pow10(digitLength - 1))
+        <span class="cov7" title="17">min := int(math.Pow10(digitLength - 1))
         max := int(math.Pow10(digitLength)) - 1
         code := fmt.Sprintf("%0*d", digitLength, randomInt(min, max))
 
@@ -6890,6 +6955,51 @@ func (s *otpService) sendNotification(ctx context.Context, req *models.TwoFactor
         }</span>
 
         <span class="cov4" title="5">return notificationResp, nil</span>
+}
+
+// validateTenantOTPConfig validates tenant OTP configuration
+func (s *otpService) validateTenantOTPConfig(config *models.TenantOTPConfig) error <span class="cov6" title="10">{
+        const (
+                MinDigitLength = 4
+                MaxDigitLength = 10
+        )
+
+        // Validate required fields
+        if config.TenantID == "" </span><span class="cov0" title="0">{
+                return models.CreateError(models.ErrorCodeMissingFields, "tenant_id is required")
+        }</span>
+
+        // Validate digit length - MUST be within acceptable range, never 0
+        <span class="cov6" title="10">if config.OTPDigitLength &lt;= 0 </span><span class="cov0" title="0">{
+                return models.CreateError(models.ErrorCodeInvalidRequest,
+                        fmt.Sprintf("OTP digit length cannot be 0 or negative, got %d", config.OTPDigitLength))
+        }</span>
+
+        <span class="cov6" title="10">if config.OTPDigitLength &lt; MinDigitLength || config.OTPDigitLength &gt; MaxDigitLength </span><span class="cov0" title="0">{
+                return models.CreateError(models.ErrorCodeInvalidRequest,
+                        fmt.Sprintf("OTP digit length must be between %d and %d, got %d",
+                                MinDigitLength, MaxDigitLength, config.OTPDigitLength))
+        }</span>
+
+        // Validate expiration time
+        <span class="cov6" title="10">if config.OTPExpirationMinutes &lt;= 0 </span><span class="cov0" title="0">{
+                return models.CreateError(models.ErrorCodeInvalidRequest,
+                        fmt.Sprintf("OTP expiration minutes must be positive, got %d", config.OTPExpirationMinutes))
+        }</span>
+
+        // Validate max attempts
+        <span class="cov6" title="10">if config.MaxOTPAttempts &lt;= 0 </span><span class="cov0" title="0">{
+                return models.CreateError(models.ErrorCodeInvalidRequest,
+                        fmt.Sprintf("max OTP attempts must be positive, got %d", config.MaxOTPAttempts))
+        }</span>
+
+        // Validate at least one delivery method is enabled
+        <span class="cov6" title="10">if !config.EnableEmailOTP &amp;&amp; !config.EnableSMSOTP </span><span class="cov0" title="0">{
+                return models.CreateError(models.ErrorCodeFeatureDisabled,
+                        "at least one OTP delivery method (email or SMS) must be enabled")
+        }</span>
+
+        <span class="cov6" title="10">return nil</span>
 }
 </pre>
 		

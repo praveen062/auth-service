@@ -5,6 +5,7 @@ import (
 	"auth-service/internal/config"
 	rest "auth-service/internal/handler/rest"
 	"auth-service/internal/middleware"
+	"auth-service/internal/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -885,6 +887,70 @@ func TestIPAllowlistMiddleware_Integration(t *testing.T) {
 	}
 }
 
+// setupTenantContext is a helper middleware that sets up tenant context for testing
+func setupTenantContext(tenantID string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tenant := &models.Tenant{
+			ID:        tenantID,
+			Name:      "Test Tenant",
+			Domain:    "test.example.com",
+			Status:    "active",
+			Plan:      "pro",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		c.Set("tenant_id", tenantID)
+		c.Set("tenant", tenant)
+		c.Next()
+	}
+}
+
+// TestMain_HandlerSetup tests the handler setup and route registration
+func TestMain_HandlerSetup(t *testing.T) {
+	isolateEnvVars(t, func() {
+		cfg := setupTestConfig()
+
+		// Test handler creation
+		authHandler := rest.NewAuthHandler(cfg)
+		oauthHandler := rest.NewOAuthHandler(cfg)
+		assert.NotNil(t, authHandler)
+		assert.NotNil(t, oauthHandler)
+
+		// Test route registration
+		r := setupTestRouter()
+
+		// Add tenant context setup for auth endpoints
+		r.Use(setupTenantContext("test-tenant"))
+
+		api := r.Group("/api/v1")
+		{
+			auth := api.Group("/auth")
+			auth.POST("/login", authHandler.Login)
+			auth.POST("/register", authHandler.Register)
+			auth.POST("/refresh", authHandler.RefreshToken)
+			auth.POST("/logout", authHandler.Logout)
+
+			oauth := api.Group("/oauth")
+			oauth.GET("/google/login", oauthHandler.GoogleLogin)
+			oauth.GET("/google/callback", oauthHandler.GoogleCallback)
+			oauth.POST("/token", oauthHandler.ClientCredentials)
+			oauth.POST("/one-time", oauthHandler.CreateOneTimeToken)
+			oauth.GET("/verify", oauthHandler.VerifyOneTimeToken)
+			oauth.POST("/refresh", oauthHandler.RefreshSession)
+		}
+
+		// Test that routes are properly registered
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/v1/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password","tenant_id":"test-tenant"}`))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		// Should return 200 OK for login endpoint
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+}
+
 // TestMain_ServerSetup tests the server setup logic
 func TestMain_ServerSetup(t *testing.T) {
 	isolateEnvVars(t, func() {
@@ -1034,48 +1100,6 @@ func TestMain_ActuatorSetup(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		// Should return 200 OK for actuator info endpoint
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-}
-
-// TestMain_HandlerSetup tests the handler setup and route registration
-func TestMain_HandlerSetup(t *testing.T) {
-	isolateEnvVars(t, func() {
-		cfg := setupTestConfig()
-
-		// Test handler creation
-		authHandler := rest.NewAuthHandler(cfg)
-		oauthHandler := rest.NewOAuthHandler(cfg)
-		assert.NotNil(t, authHandler)
-		assert.NotNil(t, oauthHandler)
-
-		// Test route registration
-		r := setupTestRouter()
-
-		api := r.Group("/api/v1")
-		{
-			auth := api.Group("/auth")
-			auth.POST("/login", authHandler.Login)
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/refresh", authHandler.RefreshToken)
-			auth.POST("/logout", authHandler.Logout)
-
-			oauth := api.Group("/oauth")
-			oauth.GET("/google/login", oauthHandler.GoogleLogin)
-			oauth.GET("/google/callback", oauthHandler.GoogleCallback)
-			oauth.POST("/token", oauthHandler.ClientCredentials)
-			oauth.POST("/one-time", oauthHandler.CreateOneTimeToken)
-			oauth.GET("/verify", oauthHandler.VerifyOneTimeToken)
-			oauth.POST("/refresh", oauthHandler.RefreshSession)
-		}
-
-		// Test that routes are properly registered
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/api/v1/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password","tenant_id":"test"}`))
-		req.Header.Set("Content-Type", "application/json")
-		r.ServeHTTP(w, req)
-
-		// Should return 200 OK for login endpoint
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 }

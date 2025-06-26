@@ -4,11 +4,13 @@ import (
 	"auth-service/internal/config"
 	"auth-service/internal/logger"
 	"auth-service/internal/middleware"
+	"auth-service/internal/models"
 	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -63,6 +65,25 @@ func setupTestLogger() *logger.Logger {
 	return log
 }
 
+// setupTenantContext is a helper middleware that sets up tenant context for testing
+func setupTenantContext(tenantID string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tenant := &models.Tenant{
+			ID:        tenantID,
+			Name:      "Test Tenant",
+			Domain:    "test.example.com",
+			Status:    "active",
+			Plan:      "pro",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		c.Set("tenant_id", tenantID)
+		c.Set("tenant", tenant)
+		c.Next()
+	}
+}
+
 func TestAuthHandler_Login_Success(t *testing.T) {
 	// Setup
 	router := setupTestRouter()
@@ -71,6 +92,8 @@ func TestAuthHandler_Login_Success(t *testing.T) {
 
 	// Add logging middleware
 	router.Use(middleware.LoggingMiddleware(log))
+	// Add tenant context setup for testing
+	router.Use(setupTenantContext("tenant-123"))
 
 	handler := NewAuthHandler(cfg)
 	router.POST("/login", handler.Login)
