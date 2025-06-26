@@ -65,19 +65,45 @@
 				
 				<option value="file4">auth-service/internal/config/config.go (90.2%)</option>
 				
-				<option value="file5">auth-service/internal/handler/rest/auth_handler.go (94.1%)</option>
+				<option value="file5">auth-service/internal/config/service_config.go (0.0%)</option>
 				
-				<option value="file6">auth-service/internal/handler/rest/oauth_handler.go (94.8%)</option>
+				<option value="file6">auth-service/internal/handler/rest/auth_handler.go (72.5%)</option>
 				
-				<option value="file7">auth-service/internal/logger/logger.go (62.7%)</option>
+				<option value="file7">auth-service/internal/handler/rest/mfa_handler.go (0.0%)</option>
 				
-				<option value="file8">auth-service/internal/middleware/actuator_middleware.go (100.0%)</option>
+				<option value="file8">auth-service/internal/handler/rest/oauth_handler.go (94.8%)</option>
 				
-				<option value="file9">auth-service/internal/middleware/logging_middleware.go (0.0%)</option>
+				<option value="file9">auth-service/internal/handler/rest/otp_handler.go (0.0%)</option>
 				
-				<option value="file10">auth-service/internal/middleware/rbac_middleware.go (100.0%)</option>
+				<option value="file10">auth-service/internal/handler/rest/tenant_auth_handler.go (0.0%)</option>
 				
-				<option value="file11">auth-service/internal/tracing/tracing.go (89.7%)</option>
+				<option value="file11">auth-service/internal/handler/rest/tenant_handler.go (0.0%)</option>
+				
+				<option value="file12">auth-service/internal/handler/rest/two_factor_handler.go (0.0%)</option>
+				
+				<option value="file13">auth-service/internal/logger/logger.go (62.7%)</option>
+				
+				<option value="file14">auth-service/internal/middleware/actuator_middleware.go (100.0%)</option>
+				
+				<option value="file15">auth-service/internal/middleware/logging_middleware.go (0.0%)</option>
+				
+				<option value="file16">auth-service/internal/middleware/rbac_middleware.go (100.0%)</option>
+				
+				<option value="file17">auth-service/internal/middleware/tenant_middleware.go (0.0%)</option>
+				
+				<option value="file18">auth-service/internal/models/errors.go (0.0%)</option>
+				
+				<option value="file19">auth-service/internal/service/mfa_service.go (0.0%)</option>
+				
+				<option value="file20">auth-service/internal/service/notification_client.go (6.9%)</option>
+				
+				<option value="file21">auth-service/internal/service/otp_service.go (58.7%)</option>
+				
+				<option value="file22">auth-service/internal/service/subscription_client.go (7.1%)</option>
+				
+				<option value="file23">auth-service/internal/service/tenant_service.go (0.0%)</option>
+				
+				<option value="file24">auth-service/internal/tracing/tracing.go (89.7%)</option>
 				
 				</select>
 			</div>
@@ -1758,6 +1784,7 @@ type Config struct {
         Tenancy  TenancyConfig  `mapstructure:"tenancy"`
         OneTime  OneTimeConfig  `mapstructure:"one_time_auth"`
         Actuator ActuatorConfig `mapstructure:"actuator"`
+        Services ServiceConfig  `mapstructure:"services"`
 }
 
 // ServerConfig holds server configuration
@@ -2194,12 +2221,116 @@ func (c *RedisConfig) GetRedisAddr() string <span class="cov6" title="4">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package rest
+		<pre class="file" id="file5" style="display: none">package config
+
+import (
+        "time"
+
+        "github.com/sony/gobreaker"
+)
+
+// ServiceConfig holds configuration for external services
+type ServiceConfig struct {
+        NotificationService NotificationServiceConfig `yaml:"notification_service" json:"notification_service"`
+        SubscriptionService SubscriptionServiceConfig `yaml:"subscription_service" json:"subscription_service"`
+}
+
+// NotificationServiceConfig holds Notification Service configuration
+type NotificationServiceConfig struct {
+        BaseURL        string               `yaml:"base_url" json:"base_url"`
+        Timeout        time.Duration        `yaml:"timeout" json:"timeout"`
+        MaxRetries     int                  `yaml:"max_retries" json:"max_retries"`
+        RetryDelay     time.Duration        `yaml:"retry_delay" json:"retry_delay"`
+        CircuitBreaker CircuitBreakerConfig `yaml:"circuit_breaker" json:"circuit_breaker"`
+}
+
+// SubscriptionServiceConfig holds Subscription Service configuration
+type SubscriptionServiceConfig struct {
+        BaseURL        string               `yaml:"base_url" json:"base_url"`
+        Timeout        time.Duration        `yaml:"timeout" json:"timeout"`
+        MaxRetries     int                  `yaml:"max_retries" json:"max_retries"`
+        RetryDelay     time.Duration        `yaml:"retry_delay" json:"retry_delay"`
+        CircuitBreaker CircuitBreakerConfig `yaml:"circuit_breaker" json:"circuit_breaker"`
+}
+
+// CircuitBreakerConfig holds circuit breaker configuration
+type CircuitBreakerConfig struct {
+        MaxFailures   uint32        `yaml:"max_failures" json:"max_failures"`
+        Timeout       time.Duration `yaml:"timeout" json:"timeout"`
+        Interval      time.Duration `yaml:"interval" json:"interval"`
+        ReadyToTrip   string        `yaml:"ready_to_trip" json:"ready_to_trip"` // "consecutive" or "count"
+        OnStateChange bool          `yaml:"on_state_change" json:"on_state_change"`
+}
+
+// DefaultServiceConfig returns default service configuration
+func DefaultServiceConfig() *ServiceConfig <span class="cov0" title="0">{
+        return &amp;ServiceConfig{
+                NotificationService: NotificationServiceConfig{
+                        BaseURL:    "http://notification-service:8080",
+                        Timeout:    10 * time.Second,
+                        MaxRetries: 3,
+                        RetryDelay: 1 * time.Second,
+                        CircuitBreaker: CircuitBreakerConfig{
+                                MaxFailures:   5,
+                                Timeout:       30 * time.Second,
+                                Interval:      60 * time.Second,
+                                ReadyToTrip:   "consecutive",
+                                OnStateChange: true,
+                        },
+                },
+                SubscriptionService: SubscriptionServiceConfig{
+                        BaseURL:    "http://subscription-service:8080",
+                        Timeout:    5 * time.Second,
+                        MaxRetries: 3,
+                        RetryDelay: 1 * time.Second,
+                        CircuitBreaker: CircuitBreakerConfig{
+                                MaxFailures:   3,
+                                Timeout:       30 * time.Second,
+                                Interval:      60 * time.Second,
+                                ReadyToTrip:   "consecutive",
+                                OnStateChange: true,
+                        },
+                },
+        }
+}</span>
+
+// CreateCircuitBreaker creates a gobreaker.CircuitBreaker from config
+func (c *CircuitBreakerConfig) CreateCircuitBreaker(name string) *gobreaker.CircuitBreaker <span class="cov0" title="0">{
+        settings := gobreaker.Settings{
+                Name:        name,
+                MaxRequests: 0, // Unlimited requests when closed
+                Interval:    c.Interval,
+                Timeout:     c.Timeout,
+                ReadyToTrip: func(counts gobreaker.Counts) bool </span><span class="cov0" title="0">{
+                        switch c.ReadyToTrip </span>{
+                        case "consecutive":<span class="cov0" title="0">
+                                return counts.ConsecutiveFailures &gt; c.MaxFailures</span>
+                        case "count":<span class="cov0" title="0">
+                                return counts.TotalFailures &gt; c.MaxFailures</span>
+                        default:<span class="cov0" title="0">
+                                return counts.ConsecutiveFailures &gt; c.MaxFailures</span>
+                        }
+                },
+        }
+
+        <span class="cov0" title="0">if c.OnStateChange </span><span class="cov0" title="0">{
+                settings.OnStateChange = func(name string, from gobreaker.State, to gobreaker.State) </span>{<span class="cov0" title="0">
+                        // Log state changes
+                        // In production, you might want to use a proper logger here
+                }</span>
+        }
+
+        <span class="cov0" title="0">return gobreaker.NewCircuitBreaker(settings)</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package rest
 
 import (
         "auth-service/internal/config"
         "auth-service/internal/logger"
         "auth-service/internal/middleware"
+        "auth-service/internal/models"
         "net/http"
         "time"
 
@@ -2232,7 +2363,7 @@ func NewAuthHandler(cfg *config.Config) *AuthHandler <span class="cov10" title="
 type LoginRequest struct {
         Email    string `json:"email" binding:"required,email" example:"user@example.com"`
         Password string `json:"password" binding:"required" example:"password123"`
-        TenantID string `json:"tenant_id" binding:"required" example:"tenant-123"`
+        TenantID string `json:"tenant_id" example:"tenant-123"` // Optional, can be extracted from context
 }
 
 // LoginResponse represents the login response body
@@ -2260,7 +2391,7 @@ type Role struct {
 
 // Login godoc
 // @Summary User login
-// @Description Authenticate a user with email and password
+// @Description Authenticate a user with email and password within a tenant
 // @Tags Authentication
 // @Accept json
 // @Produce json
@@ -2268,6 +2399,7 @@ type Role struct {
 // @Success 200 {object} LoginResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
@@ -2293,7 +2425,7 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
 
         var req LoginRequest
         if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov4" title="3">{
-                reqLogger.AuthFailure("", req.TenantID, "password", "validation_error")
+                reqLogger.AuthFailure("", "", "password", "validation_error")
                 reqLogger.Error("Login validation failed", zap.Error(err))
 
                 c.JSON(http.StatusBadRequest, ErrorResponse{
@@ -2303,9 +2435,47 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
                 return
         }</span>
 
-        <span class="cov1" title="1">reqLogger.Info("Login validation passed",
+        // Get tenant information from context (set by middleware)
+        <span class="cov1" title="1">tenantInterface := middleware.GetTenant(c)
+        if tenantInterface == nil </span><span class="cov1" title="1">{
+                reqLogger.Error("Tenant context missing")
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "tenant_context_missing",
+                        Message: "Tenant context is missing",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">tenant, ok := tenantInterface.(*models.Tenant)
+        if !ok </span><span class="cov0" title="0">{
+                reqLogger.Error("Invalid tenant type in context")
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "invalid_tenant_type",
+                        Message: "Invalid tenant type in context",
+                })
+                return
+        }</span>
+
+        // Use tenant ID from context if not provided in request
+        <span class="cov0" title="0">tenantID := req.TenantID
+        if tenantID == "" </span><span class="cov0" title="0">{
+                tenantID = tenant.ID
+        }</span>
+
+        // Verify tenant ID matches
+        <span class="cov0" title="0">if tenantID != tenant.ID </span><span class="cov0" title="0">{
+                reqLogger.AuthFailure(req.Email, tenantID, "password", "tenant_mismatch")
+                c.JSON(http.StatusForbidden, ErrorResponse{
+                        Error:   "tenant_mismatch",
+                        Message: "Tenant ID in request does not match authenticated tenant",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">reqLogger.Info("Login validation passed",
                 zap.String("email", req.Email),
-                zap.String("tenant_id", req.TenantID),
+                zap.String("tenant_id", tenantID),
+                zap.String("tenant_name", tenant.Name),
         )
 
         // TODO: Implement actual authentication logic
@@ -2315,13 +2485,13 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
         dbStart := time.Now()
         // Mock database query
         time.Sleep(10 * time.Millisecond) // Simulate DB latency
-        reqLogger.DatabaseOperation("SELECT", "users", req.TenantID, time.Since(dbStart), nil)
+        reqLogger.DatabaseOperation("SELECT", "users", tenantID, time.Since(dbStart), nil)
 
         // Simulate cache operation
         cacheStart := time.Now()
         // Mock cache check
         time.Sleep(5 * time.Millisecond) // Simulate cache latency
-        reqLogger.CacheOperation("GET", "user_session:"+req.Email, req.TenantID, false, time.Since(cacheStart), nil)
+        reqLogger.CacheOperation("GET", "user_session:"+req.Email, tenantID, false, time.Since(cacheStart), nil)
 
         response := LoginResponse{
                 AccessToken:  "mock-access-token",
@@ -2331,7 +2501,7 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
                 User: User{
                         ID:       "user-123",
                         Email:    req.Email,
-                        TenantID: req.TenantID,
+                        TenantID: tenantID,
                         Roles: []Role{
                                 {ID: "role-1", Name: "user"},
                         },
@@ -2339,11 +2509,13 @@ func (h *AuthHandler) Login(c *gin.Context) <span class="cov6" title="4">{
         }
 
         // Log successful authentication
-        reqLogger.AuthSuccess("user-123", req.TenantID, "password")
-        reqLogger.BusinessEvent("user_login", "user-123", req.TenantID, map[string]interface{}{
+        reqLogger.AuthSuccess("user-123", tenantID, "password")
+        reqLogger.BusinessEvent("user_login", "user-123", tenantID, map[string]interface{}{
                 "login_method": "password",
                 "roles":        []string{"user"},
                 "duration_ms":  time.Since(start).Milliseconds(),
+                "tenant_name":  tenant.Name,
+                "tenant_plan":  tenant.Plan,
         })
 
         c.JSON(http.StatusOK, response)</span>
@@ -2585,7 +2757,100 @@ type SuccessResponse struct {
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package rest
+		<pre class="file" id="file7" style="display: none">package rest
+
+import (
+        "auth-service/internal/logger"
+        "auth-service/internal/models"
+        "auth-service/internal/service"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+        "go.uber.org/zap"
+)
+
+// MFAHandler handles MFA-related HTTP requests
+type MFAHandler struct {
+        mfaService service.MFAService
+        logger     *logger.Logger
+}
+
+func NewMFAHandler(mfaService service.MFAService, logger *logger.Logger) *MFAHandler <span class="cov0" title="0">{
+        return &amp;MFAHandler{
+                mfaService: mfaService,
+                logger:     logger,
+        }
+}</span>
+
+// SetupMFA initiates MFA setup for a user (returns secret, QR code, backup codes)
+func (h *MFAHandler) SetupMFA(c *gin.Context) <span class="cov0" title="0">{
+        var req models.MFASetupRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind MFA setup request", zap.Error(err))
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": "Invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">secret, err := h.mfaService.GenerateSecret(req.UserID, req.TenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to generate MFA secret", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "mfa_setup_failed", "message": "Failed to generate MFA secret"})
+                return
+        }</span>
+
+        // For demo: use email as userID (in real: fetch user email)
+        <span class="cov0" title="0">qrCode, err := h.mfaService.GenerateQRCode(secret, req.UserID, "AuthService")
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to generate QR code", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "mfa_setup_failed", "message": "Failed to generate QR code"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">backupCodes, err := h.mfaService.GenerateBackupCodes()
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to generate backup codes", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "mfa_setup_failed", "message": "Failed to generate backup codes"})
+                return
+        }</span>
+
+        // In real implementation, save secret and backup codes to DB (encrypted)
+        <span class="cov0" title="0">c.JSON(http.StatusOK, models.MFASetupResponse{
+                Secret:      secret,
+                QRCodeURL:   "data:image/png;base64," + encodeToBase64(qrCode),
+                BackupCodes: backupCodes,
+                Message:     "Scan QR code with Google Authenticator or enter secret manually.",
+        })</span>
+}
+
+// VerifyMFA verifies a TOTP or backup code
+func (h *MFAHandler) VerifyMFA(c *gin.Context) <span class="cov0" title="0">{
+        var req models.MFAVerifyRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind MFA verify request", zap.Error(err))
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": "Invalid request body"})
+                return
+        }</span>
+
+        // In real implementation, fetch secret from DB
+        <span class="cov0" title="0">secret := req.Code // For demo, treat code as secret (replace with DB lookup)
+        valid, err := h.mfaService.ValidateTOTP(secret, req.Code)
+        if err != nil || !valid </span><span class="cov0" title="0">{
+                h.logger.Warn("Invalid MFA code", zap.Error(err))
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_mfa_code", "message": "Invalid MFA code"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"message": "MFA verified successfully"})</span>
+}
+
+// Helper: encode QR code PNG to base64 string
+func encodeToBase64(data []byte) string <span class="cov0" title="0">{
+        // Use encoding/base64
+        return "" // TODO: implement
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package rest
 
 import (
         "auth-service/internal/config"
@@ -3241,7 +3506,1254 @@ type OneTimeSessionResponse struct {
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package logger
+		<pre class="file" id="file9" style="display: none">package rest
+
+import (
+        "auth-service/internal/logger"
+        "auth-service/internal/models"
+        "auth-service/internal/service"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+        "go.uber.org/zap"
+)
+
+// OTPHandler handles OTP-based authentication requests
+type OTPHandler struct {
+        otpService service.OTPService
+        logger     *logger.Logger
+}
+
+func NewOTPHandler(otpService service.OTPService, logger *logger.Logger) *OTPHandler <span class="cov0" title="0">{
+        return &amp;OTPHandler{
+                otpService: otpService,
+                logger:     logger,
+        }
+}</span>
+
+// RequestOTP handles OTP request with flexible delivery methods
+// @Summary Request OTP for authentication
+// @Description Request an OTP to be sent via email, SMS, or both based on tenant configuration
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body models.OTPRequest true "OTP request details"
+// @Success 200 {object} models.OTPResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/request-otp [post]
+func (h *OTPHandler) RequestOTP(c *gin.Context) <span class="cov0" title="0">{
+        var req models.OTPRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind OTP request", zap.Error(err))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "invalid_request",
+                        Message: "Invalid request body",
+                })
+                return
+        }</span>
+
+        // Get tenant OTP configuration
+        <span class="cov0" title="0">config, err := h.otpService.GetTenantOTPConfig(req.TenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to get tenant OTP config", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "config_error",
+                        Message: "Failed to get tenant configuration",
+                })
+                return
+        }</span>
+
+        // Generate and send OTP
+        <span class="cov0" title="0">response, err := h.otpService.GenerateAndSendOTP(&amp;req, config)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to generate and send OTP", zap.Error(err))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "otp_generation_failed",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.logger.Info("OTP requested successfully",
+                zap.String("email", req.Email),
+                zap.String("tenant_id", req.TenantID),
+                zap.String("delivery_method", string(response.DeliveryMethod)))
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// VerifyOTP handles OTP verification for authentication
+// @Summary Verify OTP for authentication
+// @Description Verify an OTP code and authenticate the user
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body models.OTPVerifyRequest true "OTP verification details"
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/verify-otp [post]
+func (h *OTPHandler) VerifyOTP(c *gin.Context) <span class="cov0" title="0">{
+        var req models.OTPVerifyRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind OTP verify request", zap.Error(err))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "invalid_request",
+                        Message: "Invalid request body",
+                })
+                return
+        }</span>
+
+        // Validate OTP
+        <span class="cov0" title="0">valid, err := h.otpService.ValidateOTP(&amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("OTP validation error", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "validation_error",
+                        Message: "Failed to validate OTP",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">if !valid </span><span class="cov0" title="0">{
+                h.logger.Warn("Invalid OTP attempt",
+                        zap.String("email", req.Email),
+                        zap.String("tenant_id", req.TenantID))
+                c.JSON(http.StatusUnauthorized, ErrorResponse{
+                        Error:   "invalid_otp",
+                        Message: "Invalid or expired OTP code",
+                })
+                return
+        }</span>
+
+        // TODO: In real implementation, fetch user from database
+        // For demo, create a mock user
+        <span class="cov0" title="0">user := &amp;models.User{
+                ID:       "user-otp-123",
+                Email:    req.Email,
+                TenantID: req.TenantID,
+                Roles: []models.Role{
+                        {ID: "role-1", Name: "user"},
+                },
+        }
+
+        // Generate JWT tokens (in real implementation, use proper JWT service)
+        response := LoginResponse{
+                AccessToken:  "otp-access-token-" + req.Email,
+                RefreshToken: "otp-refresh-token-" + req.Email,
+                TokenType:    "Bearer",
+                ExpiresIn:    3600,
+                User: User{
+                        ID:       user.ID,
+                        Email:    user.Email,
+                        TenantID: user.TenantID,
+                        Roles:    []Role{{ID: user.Roles[0].ID, Name: user.Roles[0].Name}},
+                },
+        }
+
+        h.logger.Info("OTP verified successfully",
+                zap.String("email", req.Email),
+                zap.String("tenant_id", req.TenantID),
+                zap.String("delivery_method", string(req.DeliveryMethod)))
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// GetOTPConfig returns available OTP methods for a tenant
+// @Summary Get OTP configuration for tenant
+// @Description Get available OTP delivery methods and configuration for a tenant
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param tenant_id path string true "Tenant ID"
+// @Success 200 {object} models.TenantOTPConfig
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/otp-config/{tenant_id} [get]
+func (h *OTPHandler) GetOTPConfig(c *gin.Context) <span class="cov0" title="0">{
+        tenantID := c.Param("tenant_id")
+        if tenantID == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_tenant_id",
+                        Message: "Tenant ID is required",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">config, err := h.otpService.GetTenantOTPConfig(tenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to get OTP config", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "config_error",
+                        Message: "Failed to get OTP configuration",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, config)</span>
+}
+
+// UpdateOTPPreference updates user's OTP delivery preference
+// @Summary Update OTP delivery preference
+// @Description Update user's preferred OTP delivery method
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body models.UserOTPPreference true "User OTP preference"
+// @Success 200 {object} models.UserOTPPreference
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/otp-preference [put]
+func (h *OTPHandler) UpdateOTPPreference(c *gin.Context) <span class="cov0" title="0">{
+        var pref models.UserOTPPreference
+        if err := c.ShouldBindJSON(&amp;pref); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind OTP preference", zap.Error(err))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "invalid_request",
+                        Message: "Invalid request body",
+                })
+                return
+        }</span>
+
+        // Validate delivery method
+        <span class="cov0" title="0">config, err := h.otpService.GetTenantOTPConfig(pref.TenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to get tenant config for preference", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "config_error",
+                        Message: "Failed to get tenant configuration",
+                })
+                return
+        }</span>
+
+        // Check if the preferred method is enabled for the tenant
+        <span class="cov0" title="0">switch pref.PreferredMethod </span>{
+        case models.OTPDeliveryEmail:<span class="cov0" title="0">
+                if !config.EnableEmailOTP </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, ErrorResponse{
+                                Error:   "method_not_enabled",
+                                Message: "Email OTP is not enabled for this tenant",
+                        })
+                        return
+                }</span>
+        case models.OTPDeliverySMS:<span class="cov0" title="0">
+                if !config.EnableSMSOTP </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusBadRequest, ErrorResponse{
+                                Error:   "method_not_enabled",
+                                Message: "SMS OTP is not enabled for this tenant",
+                        })
+                        return
+                }</span>
+        }
+
+        // Update preference
+        <span class="cov0" title="0">err = h.otpService.UpdateUserOTPPreference(&amp;pref)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to update OTP preference", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "update_failed",
+                        Message: "Failed to update OTP preference",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.logger.Info("OTP preference updated",
+                zap.String("user_id", pref.UserID),
+                zap.String("tenant_id", pref.TenantID),
+                zap.String("preferred_method", string(pref.PreferredMethod)))
+
+        c.JSON(http.StatusOK, pref)</span>
+}
+
+// GetSMSUsageInfo returns SMS usage information for a tenant
+// @Summary Get SMS usage information
+// @Description Get current SMS usage, limits, and billing cycle information for a tenant
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param tenant_id path string true "Tenant ID"
+// @Success 200 {object} models.SMSUsageInfo
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/sms-usage/{tenant_id} [get]
+func (h *OTPHandler) GetSMSUsageInfo(c *gin.Context) <span class="cov0" title="0">{
+        tenantID := c.Param("tenant_id")
+        if tenantID == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_tenant_id",
+                        Message: "Tenant ID is required",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">usageInfo, err := h.otpService.GetSMSUsageInfo(tenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to get SMS usage info", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "usage_info_error",
+                        Message: "Failed to get SMS usage information",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.logger.Info("SMS usage info retrieved",
+                zap.String("tenant_id", tenantID),
+                zap.Int("current_usage", usageInfo.CurrentUsage),
+                zap.Int("monthly_limit", usageInfo.MonthlyLimit))
+
+        c.JSON(http.StatusOK, usageInfo)</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package rest
+
+import (
+        "auth-service/internal/logger"
+        "auth-service/internal/middleware"
+        "auth-service/internal/models"
+        "auth-service/internal/service"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+        "go.uber.org/zap"
+)
+
+// TenantAuthHandler handles tenant authentication requests
+type TenantAuthHandler struct {
+        tenantService service.TenantService
+        logger        *logger.Logger
+}
+
+// NewTenantAuthHandler creates a new tenant auth handler
+func NewTenantAuthHandler(tenantService service.TenantService, logger *logger.Logger) *TenantAuthHandler <span class="cov0" title="0">{
+        return &amp;TenantAuthHandler{
+                tenantService: tenantService,
+                logger:        logger,
+        }
+}</span>
+
+// AuthenticateTenant handles tenant authentication
+// @Summary Authenticate tenant
+// @Description Authenticate a tenant using client credentials
+// @Tags tenant-auth
+// @Accept json
+// @Produce json
+// @Param request body models.TenantAuthRequest true "Tenant authentication request"
+// @Success 200 {object} models.TenantAuthResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Router /api/v1/tenant/auth [post]
+func (h *TenantAuthHandler) AuthenticateTenant(c *gin.Context) <span class="cov0" title="0">{
+        var req models.TenantAuthRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind tenant auth request", zap.Error(err))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "invalid_request",
+                        Message: "Invalid request body",
+                })
+                return
+        }</span>
+
+        // Validate grant type
+        <span class="cov0" title="0">if req.GrantType != "client_credentials" </span><span class="cov0" title="0">{
+                h.logger.Warn("Unsupported grant type", zap.String("grant_type", req.GrantType))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "unsupported_grant_type",
+                        Message: "Only client_credentials grant type is supported",
+                })
+                return
+        }</span>
+
+        // Authenticate tenant
+        <span class="cov0" title="0">response, err := h.tenantService.AuthenticateTenant(c.Request.Context(), &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Tenant authentication failed",
+                        zap.String("client_id", req.ClientID),
+                        zap.Error(err))
+                c.JSON(http.StatusUnauthorized, ErrorResponse{
+                        Error:   "authentication_failed",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.logger.Info("Tenant authenticated successfully",
+                zap.String("tenant_id", response.TenantID),
+                zap.String("tenant_name", response.TenantName))
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// RefreshTenantToken handles tenant token refresh
+// @Summary Refresh tenant token
+// @Description Refresh a tenant access token using refresh token
+// @Tags tenant-auth
+// @Accept json
+// @Produce json
+// @Param request body map[string]string true "Refresh token request"
+// @Success 200 {object} models.TenantAuthResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Router /api/v1/tenant/refresh [post]
+func (h *TenantAuthHandler) RefreshTenantToken(c *gin.Context) <span class="cov0" title="0">{
+        var req struct {
+                RefreshToken string `json:"refresh_token" binding:"required"`
+        }
+
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind refresh token request", zap.Error(err))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "invalid_request",
+                        Message: "Invalid request body",
+                })
+                return
+        }</span>
+
+        // Refresh tenant token
+        <span class="cov0" title="0">response, err := h.tenantService.RefreshTenantToken(c.Request.Context(), req.RefreshToken)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Tenant token refresh failed", zap.Error(err))
+                c.JSON(http.StatusUnauthorized, ErrorResponse{
+                        Error:   "token_refresh_failed",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.logger.Info("Tenant token refreshed successfully", zap.String("tenant_id", response.TenantID))
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// RevokeTenantToken handles tenant token revocation
+// @Summary Revoke tenant token
+// @Description Revoke a tenant access token
+// @Tags tenant-auth
+// @Accept json
+// @Produce json
+// @Param request body map[string]string true "Revoke token request"
+// @Success 200 {object} SuccessResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Router /api/v1/tenant/revoke [post]
+func (h *TenantAuthHandler) RevokeTenantToken(c *gin.Context) <span class="cov0" title="0">{
+        var req struct {
+                Token string `json:"token" binding:"required"`
+        }
+
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind revoke token request", zap.Error(err))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "invalid_request",
+                        Message: "Invalid request body",
+                })
+                return
+        }</span>
+
+        // Revoke tenant token
+        <span class="cov0" title="0">err := h.tenantService.RevokeTenantToken(c.Request.Context(), req.Token)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Tenant token revocation failed", zap.Error(err))
+                c.JSON(http.StatusUnauthorized, ErrorResponse{
+                        Error:   "token_revocation_failed",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.logger.Info("Tenant token revoked successfully")
+        c.JSON(http.StatusOK, SuccessResponse{
+                Message: "Token revoked successfully",
+        })</span>
+}
+
+// ValidateTenantToken validates a tenant token
+// @Summary Validate tenant token
+// @Description Validate a tenant access token
+// @Tags tenant-auth
+// @Accept json
+// @Produce json
+// @Param request body map[string]string true "Token validation request"
+// @Success 200 {object} models.TenantToken
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Router /api/v1/tenant/validate [post]
+func (h *TenantAuthHandler) ValidateTenantToken(c *gin.Context) <span class="cov0" title="0">{
+        var req struct {
+                Token string `json:"token" binding:"required"`
+        }
+
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to bind token validation request", zap.Error(err))
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "invalid_request",
+                        Message: "Invalid request body",
+                })
+                return
+        }</span>
+
+        // Validate tenant token
+        <span class="cov0" title="0">token, err := h.tenantService.ValidateTenantToken(c.Request.Context(), req.Token)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Tenant token validation failed", zap.Error(err))
+                c.JSON(http.StatusUnauthorized, ErrorResponse{
+                        Error:   "token_validation_failed",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.logger.Info("Tenant token validated successfully", zap.String("tenant_id", token.TenantID))
+        c.JSON(http.StatusOK, token)</span>
+}
+
+// GetTenantInfo returns information about the authenticated tenant
+// @Summary Get tenant info
+// @Description Get information about the authenticated tenant
+// @Tags tenant-auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.Tenant
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Router /api/v1/tenant/info [get]
+func (h *TenantAuthHandler) GetTenantInfo(c *gin.Context) <span class="cov0" title="0">{
+        // Get tenant from context (set by middleware)
+        tenantInterface := middleware.GetTenant(c)
+        if tenantInterface == nil </span><span class="cov0" title="0">{
+                h.logger.Error("Tenant context missing")
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "tenant_context_missing",
+                        Message: "Tenant context is missing",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">tenant, ok := tenantInterface.(*models.Tenant)
+        if !ok </span><span class="cov0" title="0">{
+                h.logger.Error("Invalid tenant type in context")
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "invalid_tenant_type",
+                        Message: "Invalid tenant type in context",
+                })
+                return
+        }</span>
+
+        // Remove sensitive information
+        <span class="cov0" title="0">tenant.ClientSecret = ""
+        tenant.APIKey = ""
+        tenant.SecretKey = ""
+
+        h.logger.Info("Tenant info retrieved", zap.String("tenant_id", tenant.ID))
+        c.JSON(http.StatusOK, tenant)</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package rest
+
+import (
+        "auth-service/internal/config"
+        "auth-service/internal/logger"
+        "auth-service/internal/middleware"
+        "auth-service/internal/models"
+        "auth-service/internal/service"
+        "net/http"
+        "strconv"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "go.uber.org/zap"
+)
+
+// TenantHandler handles tenant-related HTTP requests
+type TenantHandler struct {
+        tenantService service.TenantService
+        logger        *logger.Logger
+}
+
+// NewTenantHandler creates a new TenantHandler instance
+func NewTenantHandler(tenantService service.TenantService, cfg *config.Config) *TenantHandler <span class="cov0" title="0">{
+        // Initialize logger for tenant handler
+        appLogger, err := logger.NewLogger(&amp;cfg.Logging)
+        if err != nil </span><span class="cov0" title="0">{
+                // Fallback to default logger if initialization fails
+                appLogger = &amp;logger.Logger{}
+        }</span>
+
+        <span class="cov0" title="0">return &amp;TenantHandler{
+                tenantService: tenantService,
+                logger:        appLogger,
+        }</span>
+}
+
+// CreateTenantRequest represents the tenant creation request
+type CreateTenantRequest struct {
+        Name   string `json:"name" binding:"required" example:"Acme Corporation"`
+        Domain string `json:"domain" binding:"required" example:"acme.com"`
+        Plan   string `json:"plan" example:"pro"` // basic, pro, enterprise
+}
+
+// UpdateTenantRequest represents the tenant update request
+type UpdateTenantRequest struct {
+        Name   string `json:"name" example:"Acme Corporation"`
+        Domain string `json:"domain" example:"acme.com"`
+        Plan   string `json:"plan" example:"enterprise"`
+        Status string `json:"status" example:"active"` // active, suspended, inactive
+}
+
+// TenantResponse represents the tenant response
+type TenantResponse struct {
+        ID        string     `json:"id" example:"tenant-123"`
+        Name      string     `json:"name" example:"Acme Corporation"`
+        Domain    string     `json:"domain" example:"acme.com"`
+        Status    string     `json:"status" example:"active"`
+        Plan      string     `json:"plan" example:"pro"`
+        MaxUsers  int        `json:"max_users" example:"1000"`
+        Features  []string   `json:"features" example:"oauth,mfa,audit"`
+        CreatedAt time.Time  `json:"created_at"`
+        UpdatedAt time.Time  `json:"updated_at"`
+        ExpiresAt *time.Time `json:"expires_at,omitempty"`
+}
+
+// TenantStatsResponse represents tenant statistics response
+type TenantStatsResponse struct {
+        TenantID    string    `json:"tenant_id" example:"tenant-123"`
+        TotalUsers  int       `json:"total_users" example:"150"`
+        ActiveUsers int       `json:"active_users" example:"120"`
+        TotalLogins int       `json:"total_logins" example:"1250"`
+        LastLoginAt time.Time `json:"last_login_at"`
+        StorageUsed int64     `json:"storage_used" example:"52428800"` // in bytes
+        APIRequests int       `json:"api_requests" example:"5000"`
+        UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// CreateTenant godoc
+// @Summary Create a new tenant
+// @Description Create a new client organization for the SaaS auth service
+// @Tags Tenants
+// @Accept json
+// @Produce json
+// @Param request body CreateTenantRequest true "Tenant creation data"
+// @Success 201 {object} TenantResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /tenants [post]
+func (h *TenantHandler) CreateTenant(c *gin.Context) <span class="cov0" title="0">{
+        start := time.Now()
+
+        // Safely get logger from context
+        var reqLogger *logger.RequestLogger
+        if loggerInterface := middleware.GetLogger(c); loggerInterface != nil </span><span class="cov0" title="0">{
+                if reqLog, ok := loggerInterface.(*logger.RequestLogger); ok </span><span class="cov0" title="0">{
+                        reqLogger = reqLog
+                }</span>
+        }
+
+        // If no logger available, create a basic one
+        <span class="cov0" title="0">if reqLogger == nil </span><span class="cov0" title="0">{
+                reqLogger = h.logger.WithRequest(c.Request)
+        }</span>
+
+        <span class="cov0" title="0">reqLogger.Info("Tenant creation initiated",
+                zap.String("endpoint", "/tenants"),
+                zap.String("method", "POST"),
+        )
+
+        var req CreateTenantRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                reqLogger.Error("Tenant creation validation failed", zap.Error(err))
+
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "validation_error",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">reqLogger.Info("Tenant creation validation passed",
+                zap.String("name", req.Name),
+                zap.String("domain", req.Domain),
+                zap.String("plan", req.Plan),
+        )
+
+        // Create tenant model
+        tenant := &amp;models.Tenant{
+                ID:     "tenant-" + strconv.FormatInt(time.Now().Unix(), 10), // Simple ID generation
+                Name:   req.Name,
+                Domain: req.Domain,
+                Plan:   req.Plan,
+        }
+
+        // Create tenant
+        if err := h.tenantService.CreateTenant(c.Request.Context(), tenant); err != nil </span><span class="cov0" title="0">{
+                reqLogger.Error("Tenant creation failed", zap.Error(err))
+
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "creation_failed",
+                        Message: "Failed to create tenant: " + err.Error(),
+                })
+                return
+        }</span>
+
+        // Convert to response
+        <span class="cov0" title="0">response := TenantResponse{
+                ID:        tenant.ID,
+                Name:      tenant.Name,
+                Domain:    tenant.Domain,
+                Status:    tenant.Status,
+                Plan:      tenant.Plan,
+                MaxUsers:  tenant.MaxUsers,
+                Features:  tenant.Features,
+                CreatedAt: tenant.CreatedAt,
+                UpdatedAt: tenant.UpdatedAt,
+                ExpiresAt: tenant.ExpiresAt,
+        }
+
+        // Log successful tenant creation
+        reqLogger.BusinessEvent("tenant_created", "", tenant.ID, map[string]interface{}{
+                "name":        req.Name,
+                "domain":      req.Domain,
+                "plan":        req.Plan,
+                "duration_ms": time.Since(start).Milliseconds(),
+        })
+
+        c.JSON(http.StatusCreated, response)</span>
+}
+
+// GetTenant godoc
+// @Summary Get tenant information
+// @Description Retrieve tenant information by ID
+// @Tags Tenants
+// @Accept json
+// @Produce json
+// @Param tenant_id path string true "Tenant ID" example("tenant-123")
+// @Success 200 {object} TenantResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /tenants/{tenant_id} [get]
+func (h *TenantHandler) GetTenant(c *gin.Context) <span class="cov0" title="0">{
+        tenantID := c.Param("tenant_id")
+        if tenantID == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_tenant_id",
+                        Message: "Tenant ID is required",
+                })
+                return
+        }</span>
+
+        // Get tenant
+        <span class="cov0" title="0">tenant, err := h.tenantService.GetTenant(c.Request.Context(), tenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, ErrorResponse{
+                        Error:   "tenant_not_found",
+                        Message: "Tenant not found",
+                })
+                return
+        }</span>
+
+        // Convert to response
+        <span class="cov0" title="0">response := TenantResponse{
+                ID:        tenant.ID,
+                Name:      tenant.Name,
+                Domain:    tenant.Domain,
+                Status:    tenant.Status,
+                Plan:      tenant.Plan,
+                MaxUsers:  tenant.MaxUsers,
+                Features:  tenant.Features,
+                CreatedAt: tenant.CreatedAt,
+                UpdatedAt: tenant.UpdatedAt,
+                ExpiresAt: tenant.ExpiresAt,
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// UpdateTenant godoc
+// @Summary Update tenant information
+// @Description Update tenant information and settings
+// @Tags Tenants
+// @Accept json
+// @Produce json
+// @Param tenant_id path string true "Tenant ID" example("tenant-123")
+// @Param request body UpdateTenantRequest true "Tenant update data"
+// @Success 200 {object} TenantResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /tenants/{tenant_id} [put]
+func (h *TenantHandler) UpdateTenant(c *gin.Context) <span class="cov0" title="0">{
+        tenantID := c.Param("tenant_id")
+        if tenantID == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_tenant_id",
+                        Message: "Tenant ID is required",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">var req UpdateTenantRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "validation_error",
+                        Message: err.Error(),
+                })
+                return
+        }</span>
+
+        // Get existing tenant
+        <span class="cov0" title="0">tenant, err := h.tenantService.GetTenant(c.Request.Context(), tenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, ErrorResponse{
+                        Error:   "tenant_not_found",
+                        Message: "Tenant not found",
+                })
+                return
+        }</span>
+
+        // Update fields
+        <span class="cov0" title="0">if req.Name != "" </span><span class="cov0" title="0">{
+                tenant.Name = req.Name
+        }</span>
+        <span class="cov0" title="0">if req.Domain != "" </span><span class="cov0" title="0">{
+                tenant.Domain = req.Domain
+        }</span>
+        <span class="cov0" title="0">if req.Plan != "" </span><span class="cov0" title="0">{
+                tenant.Plan = req.Plan
+        }</span>
+        <span class="cov0" title="0">if req.Status != "" </span><span class="cov0" title="0">{
+                tenant.Status = req.Status
+        }</span>
+
+        // Update tenant
+        <span class="cov0" title="0">if err := h.tenantService.UpdateTenant(c.Request.Context(), tenant); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "update_failed",
+                        Message: "Failed to update tenant: " + err.Error(),
+                })
+                return
+        }</span>
+
+        // Convert to response
+        <span class="cov0" title="0">response := TenantResponse{
+                ID:        tenant.ID,
+                Name:      tenant.Name,
+                Domain:    tenant.Domain,
+                Status:    tenant.Status,
+                Plan:      tenant.Plan,
+                MaxUsers:  tenant.MaxUsers,
+                Features:  tenant.Features,
+                CreatedAt: tenant.CreatedAt,
+                UpdatedAt: tenant.UpdatedAt,
+                ExpiresAt: tenant.ExpiresAt,
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// DeleteTenant godoc
+// @Summary Delete tenant
+// @Description Delete a tenant and all associated data
+// @Tags Tenants
+// @Accept json
+// @Produce json
+// @Param tenant_id path string true "Tenant ID" example("tenant-123")
+// @Success 200 {object} SuccessResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /tenants/{tenant_id} [delete]
+func (h *TenantHandler) DeleteTenant(c *gin.Context) <span class="cov0" title="0">{
+        tenantID := c.Param("tenant_id")
+        if tenantID == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_tenant_id",
+                        Message: "Tenant ID is required",
+                })
+                return
+        }</span>
+
+        // Delete tenant
+        <span class="cov0" title="0">if err := h.tenantService.DeleteTenant(c.Request.Context(), tenantID); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "delete_failed",
+                        Message: "Failed to delete tenant: " + err.Error(),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, SuccessResponse{
+                Message: "Tenant deleted successfully",
+        })</span>
+}
+
+// ListTenants godoc
+// @Summary List tenants
+// @Description Retrieve a list of tenants with pagination
+// @Tags Tenants
+// @Accept json
+// @Produce json
+// @Param limit query int false "Number of tenants to return" example(10)
+// @Param offset query int false "Number of tenants to skip" example(0)
+// @Success 200 {array} TenantResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /tenants [get]
+func (h *TenantHandler) ListTenants(c *gin.Context) <span class="cov0" title="0">{
+        limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+        offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+        // Validate pagination parameters
+        if limit &lt; 1 || limit &gt; 100 </span><span class="cov0" title="0">{
+                limit = 10
+        }</span>
+        <span class="cov0" title="0">if offset &lt; 0 </span><span class="cov0" title="0">{
+                offset = 0
+        }</span>
+
+        // Get tenants
+        <span class="cov0" title="0">tenants, err := h.tenantService.ListTenants(c.Request.Context(), limit, offset)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, ErrorResponse{
+                        Error:   "list_failed",
+                        Message: "Failed to list tenants: " + err.Error(),
+                })
+                return
+        }</span>
+
+        // Convert to response
+        <span class="cov0" title="0">var response []TenantResponse
+        for _, tenant := range tenants </span><span class="cov0" title="0">{
+                response = append(response, TenantResponse{
+                        ID:        tenant.ID,
+                        Name:      tenant.Name,
+                        Domain:    tenant.Domain,
+                        Status:    tenant.Status,
+                        Plan:      tenant.Plan,
+                        MaxUsers:  tenant.MaxUsers,
+                        Features:  tenant.Features,
+                        CreatedAt: tenant.CreatedAt,
+                        UpdatedAt: tenant.UpdatedAt,
+                        ExpiresAt: tenant.ExpiresAt,
+                })
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, response)</span>
+}
+
+// GetTenantStats godoc
+// @Summary Get tenant statistics
+// @Description Retrieve usage statistics for a tenant
+// @Tags Tenants
+// @Accept json
+// @Produce json
+// @Param tenant_id path string true "Tenant ID" example("tenant-123")
+// @Success 200 {object} TenantStatsResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /tenants/{tenant_id}/stats [get]
+func (h *TenantHandler) GetTenantStats(c *gin.Context) <span class="cov0" title="0">{
+        tenantID := c.Param("tenant_id")
+        if tenantID == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, ErrorResponse{
+                        Error:   "missing_tenant_id",
+                        Message: "Tenant ID is required",
+                })
+                return
+        }</span>
+
+        // Get tenant stats
+        <span class="cov0" title="0">stats, err := h.tenantService.GetTenantStats(c.Request.Context(), tenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, ErrorResponse{
+                        Error:   "stats_not_found",
+                        Message: "Tenant statistics not found",
+                })
+                return
+        }</span>
+
+        // Convert to response
+        <span class="cov0" title="0">response := TenantStatsResponse{
+                TenantID:    stats.TenantID,
+                TotalUsers:  stats.TotalUsers,
+                ActiveUsers: stats.ActiveUsers,
+                TotalLogins: stats.TotalLogins,
+                LastLoginAt: stats.LastLoginAt,
+                StorageUsed: stats.StorageUsed,
+                APIRequests: stats.APIRequests,
+                UpdatedAt:   stats.UpdatedAt,
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package rest
+
+import (
+        "auth-service/internal/logger"
+        "auth-service/internal/middleware"
+        "auth-service/internal/models"
+        "auth-service/internal/service"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+        "go.uber.org/zap"
+)
+
+// TwoFactorHandler handles 2FA-related requests
+type TwoFactorHandler struct {
+        otpService service.OTPService
+        logger     *logger.Logger
+}
+
+// NewTwoFactorHandler creates a new 2FA handler
+func NewTwoFactorHandler(otpService service.OTPService, logger *logger.Logger) *TwoFactorHandler <span class="cov0" title="0">{
+        return &amp;TwoFactorHandler{
+                otpService: otpService,
+                logger:     logger,
+        }
+}</span>
+
+// TriggerTwoFactorAuth handles POST /internal/2fa/send
+func (h *TwoFactorHandler) TriggerTwoFactorAuth(c *gin.Context) <span class="cov0" title="0">{
+        // Safely get logger from context
+        var reqLogger *logger.RequestLogger
+        if loggerInterface := middleware.GetLogger(c); loggerInterface != nil </span><span class="cov0" title="0">{
+                if reqLog, ok := loggerInterface.(*logger.RequestLogger); ok </span><span class="cov0" title="0">{
+                        reqLogger = reqLog
+                }</span>
+        }
+
+        // If no logger available, create a basic one
+        <span class="cov0" title="0">if reqLogger == nil </span><span class="cov0" title="0">{
+                reqLogger = h.logger.WithRequest(c.Request)
+        }</span>
+
+        <span class="cov0" title="0">var req models.TwoFactorAuthRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                reqLogger.Error("Failed to bind 2FA request", zap.Error(err))
+                apiError := models.CreateError(models.ErrorCodeInvalidRequest, err.Error())
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        // Validate required fields
+        <span class="cov0" title="0">if req.UserID == "" || req.ClientID == "" || req.Channel == "" || req.Recipient == "" </span><span class="cov0" title="0">{
+                reqLogger.Error("Missing required fields in 2FA request",
+                        zap.String("user_id", req.UserID),
+                        zap.String("client_id", req.ClientID),
+                        zap.String("channel", req.Channel),
+                        zap.String("recipient", req.Recipient))
+                apiError := models.CreateError(models.ErrorCodeMissingFields, "user_id, client_id, channel, and recipient are required")
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        // Validate channel
+        <span class="cov0" title="0">if req.Channel != "EMAIL" &amp;&amp; req.Channel != "SMS" </span><span class="cov0" title="0">{
+                reqLogger.Error("Invalid channel in 2FA request", zap.String("channel", req.Channel))
+                apiError := models.CreateError(models.ErrorCodeInvalidChannel, "channel must be EMAIL or SMS")
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        // Log the 2FA request
+        <span class="cov0" title="0">reqLogger.Info("2FA request received",
+                zap.String("user_id", req.UserID),
+                zap.String("client_id", req.ClientID),
+                zap.String("channel", req.Channel),
+                zap.String("recipient", req.Recipient))
+
+        // Trigger 2FA
+        resp, err := h.otpService.TriggerTwoFactorAuth(c.Request.Context(), &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                // Check if it's a structured API error
+                if apiError, ok := err.(*models.APIError); ok </span><span class="cov0" title="0">{
+                        reqLogger.Error("2FA request failed",
+                                zap.String("error_code", string(apiError.Code)),
+                                zap.String("error_type", string(apiError.Type)),
+                                zap.String("message", apiError.Message),
+                                zap.String("user_id", req.UserID),
+                                zap.String("client_id", req.ClientID))
+                        c.JSON(apiError.HTTPStatus, apiError)
+                        return
+                }</span>
+
+                // Handle generic errors
+                <span class="cov0" title="0">reqLogger.Error("Failed to trigger 2FA",
+                        zap.Error(err),
+                        zap.String("user_id", req.UserID),
+                        zap.String("client_id", req.ClientID))
+                apiError := models.CreateError(models.ErrorCodeInternalError, err.Error())
+                c.JSON(apiError.HTTPStatus, apiError)
+                return</span>
+        }
+
+        // Log successful 2FA trigger
+        <span class="cov0" title="0">reqLogger.Info("2FA triggered successfully",
+                zap.String("user_id", req.UserID),
+                zap.String("client_id", req.ClientID),
+                zap.String("message_id", resp.MessageID),
+                zap.Int("digit_length", resp.OTPDigitLength))
+
+        c.JSON(http.StatusOK, resp)</span>
+}
+
+// ValidateTwoFactorAuth handles POST /internal/2fa/validate
+func (h *TwoFactorHandler) ValidateTwoFactorAuth(c *gin.Context) <span class="cov0" title="0">{
+        // Safely get logger from context
+        var reqLogger *logger.RequestLogger
+        if loggerInterface := middleware.GetLogger(c); loggerInterface != nil </span><span class="cov0" title="0">{
+                if reqLog, ok := loggerInterface.(*logger.RequestLogger); ok </span><span class="cov0" title="0">{
+                        reqLogger = reqLog
+                }</span>
+        }
+
+        // If no logger available, create a basic one
+        <span class="cov0" title="0">if reqLogger == nil </span><span class="cov0" title="0">{
+                reqLogger = h.logger.WithRequest(c.Request)
+        }</span>
+
+        <span class="cov0" title="0">var req models.OTPVerifyRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                reqLogger.Error("Failed to bind 2FA validation request", zap.Error(err))
+                apiError := models.CreateError(models.ErrorCodeInvalidRequest, err.Error())
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        // Validate required fields
+        <span class="cov0" title="0">if req.TenantID == "" || req.Code == "" </span><span class="cov0" title="0">{
+                reqLogger.Error("Missing required fields in 2FA validation request",
+                        zap.String("tenant_id", req.TenantID),
+                        zap.Int("code_length", len(req.Code)))
+                apiError := models.CreateError(models.ErrorCodeMissingFields, "tenant_id and code are required")
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        // Determine field type (email or mobile)
+        <span class="cov0" title="0">if req.Email == "" &amp;&amp; req.Mobile == "" </span><span class="cov0" title="0">{
+                reqLogger.Error("Missing recipient field in 2FA validation request")
+                apiError := models.CreateError(models.ErrorCodeMissingFields, "either email or mobile is required")
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        // Log the validation request
+        <span class="cov0" title="0">reqLogger.Info("2FA validation request received",
+                zap.String("tenant_id", req.TenantID),
+                zap.String("email", req.Email),
+                zap.String("mobile", req.Mobile),
+                zap.Int("code_length", len(req.Code)))
+
+        // Validate OTP
+        valid, err := h.otpService.ValidateOTP(&amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                reqLogger.Error("Failed to validate 2FA",
+                        zap.Error(err),
+                        zap.String("tenant_id", req.TenantID))
+                apiError := models.CreateError(models.ErrorCodeInternalError, err.Error())
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        <span class="cov0" title="0">if valid </span><span class="cov0" title="0">{
+                reqLogger.Info("2FA validation successful",
+                        zap.String("tenant_id", req.TenantID),
+                        zap.String("email", req.Email),
+                        zap.String("mobile", req.Mobile))
+                c.JSON(http.StatusOK, gin.H{
+                        "success": true,
+                        "message": "2FA validation successful",
+                })
+        }</span> else<span class="cov0" title="0"> {
+                reqLogger.Warn("2FA validation failed",
+                        zap.String("tenant_id", req.TenantID),
+                        zap.String("email", req.Email),
+                        zap.String("mobile", req.Mobile))
+                apiError := models.CreateError(models.ErrorCodeInvalidOTP, "Invalid or expired OTP")
+                c.JSON(apiError.HTTPStatus, apiError)
+        }</span>
+}
+
+// GetTwoFactorStatus handles GET /internal/2fa/status/:client_id
+func (h *TwoFactorHandler) GetTwoFactorStatus(c *gin.Context) <span class="cov0" title="0">{
+        // Safely get logger from context
+        var reqLogger *logger.RequestLogger
+        if loggerInterface := middleware.GetLogger(c); loggerInterface != nil </span><span class="cov0" title="0">{
+                if reqLog, ok := loggerInterface.(*logger.RequestLogger); ok </span><span class="cov0" title="0">{
+                        reqLogger = reqLog
+                }</span>
+        }
+
+        // If no logger available, create a basic one
+        <span class="cov0" title="0">if reqLogger == nil </span><span class="cov0" title="0">{
+                reqLogger = h.logger.WithRequest(c.Request)
+        }</span>
+
+        <span class="cov0" title="0">clientID := c.Param("client_id")
+        if clientID == "" </span><span class="cov0" title="0">{
+                reqLogger.Error("Missing client_id in 2FA status request")
+                apiError := models.CreateError(models.ErrorCodeMissingFields, "client_id is required")
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        // Get tenant config
+        <span class="cov0" title="0">config, err := h.otpService.GetTenantOTPConfig(clientID)
+        if err != nil </span><span class="cov0" title="0">{
+                reqLogger.Error("Failed to get tenant config for 2FA status",
+                        zap.Error(err),
+                        zap.String("client_id", clientID))
+                apiError := models.CreateError(models.ErrorCodeInternalError, err.Error())
+                c.JSON(apiError.HTTPStatus, apiError)
+                return
+        }</span>
+
+        // Get SMS usage info if SMS is enabled
+        <span class="cov0" title="0">var smsUsageInfo *models.SMSUsageInfo
+        if config.EnableSMSOTP </span><span class="cov0" title="0">{
+                smsUsageInfo, err = h.otpService.GetSMSUsageInfo(clientID)
+                if err != nil </span><span class="cov0" title="0">{
+                        reqLogger.Error("Failed to get SMS usage info",
+                                zap.Error(err),
+                                zap.String("client_id", clientID))
+                }</span>
+        }
+
+        <span class="cov0" title="0">reqLogger.Info("2FA status retrieved",
+                zap.String("client_id", clientID),
+                zap.Bool("email_enabled", config.EnableEmailOTP),
+                zap.Bool("sms_enabled", config.EnableSMSOTP))
+
+        c.JSON(http.StatusOK, gin.H{
+                "client_id":           clientID,
+                "email_enabled":       config.EnableEmailOTP,
+                "sms_enabled":         config.EnableSMSOTP,
+                "otp_digit_length":    config.OTPDigitLength,
+                "expiration_minutes":  config.OTPExpirationMinutes,
+                "max_attempts":        config.MaxOTPAttempts,
+                "rate_limit_per_hour": config.RateLimitPerHour,
+                "sms_usage_info":      smsUsageInfo,
+        })</span>
+}
+
+// RegisterTwoFactorRoutes registers 2FA routes
+func (h *TwoFactorHandler) RegisterTwoFactorRoutes(router *gin.RouterGroup) <span class="cov0" title="0">{
+        // Internal 2FA endpoints
+        internal := router.Group("/internal/2fa")
+        </span><span class="cov0" title="0">{
+                internal.POST("/send", h.TriggerTwoFactorAuth)
+                internal.POST("/validate", h.ValidateTwoFactorAuth)
+                internal.GET("/status/:client_id", h.GetTwoFactorStatus)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package logger
 
 import (
         "auth-service/internal/config"
@@ -3652,7 +5164,7 @@ func getFromContext(ctx context.Context, key string) string <span class="cov0" t
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package middleware
+		<pre class="file" id="file14" style="display: none">package middleware
 
 import (
         "auth-service/internal/actuator"
@@ -3695,7 +5207,7 @@ func HealthCheckMiddleware() gin.HandlerFunc <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package middleware
+		<pre class="file" id="file15" style="display: none">package middleware
 
 import (
         "auth-service/internal/logger"
@@ -3774,7 +5286,7 @@ func SetUserContext(c *gin.Context, userID, tenantID string) <span class="cov0" 
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package middleware
+		<pre class="file" id="file16" style="display: none">package middleware
 
 import (
         "auth-service/internal/service"
@@ -3808,7 +5320,2261 @@ func RBACMiddleware(rbac service.RBACService, permission string) gin.HandlerFunc
 // For gRPC, similar interceptor logic would be used.
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package tracing
+		<pre class="file" id="file17" style="display: none">package middleware
+
+import (
+        "auth-service/internal/service"
+        "net/http"
+        "strings"
+
+        "github.com/gin-gonic/gin"
+        "github.com/golang-jwt/jwt/v5"
+)
+
+// TenantMiddleware validates tenant access and extracts tenant information
+func TenantMiddleware(tenantService service.TenantService) gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                // Extract tenant ID from various sources
+                tenantID := extractTenantID(c)
+
+                if tenantID == "" </span><span class="cov0" title="0">{
+                        c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+                                "error":   "missing_tenant_id",
+                                "message": "Tenant ID is required",
+                        })
+                        return
+                }</span>
+
+                // Check if we have a tenant token in X-Tenant-Token header
+                <span class="cov0" title="0">tenantToken := c.GetHeader("X-Tenant-Token")
+                if tenantToken != "" </span><span class="cov0" title="0">{
+                        // Validate the tenant token
+                        token, err := tenantService.ValidateTenantToken(c.Request.Context(), tenantToken)
+                        if err != nil </span><span class="cov0" title="0">{
+                                c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+                                        "error":   "invalid_tenant_token",
+                                        "message": err.Error(),
+                                })
+                                return
+                        }</span>
+
+                        // Verify the tenant ID in the token matches the extracted tenant ID
+                        <span class="cov0" title="0">if token.TenantID != tenantID </span><span class="cov0" title="0">{
+                                c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+                                        "error":   "tenant_token_mismatch",
+                                        "message": "Tenant token does not match tenant ID",
+                                })
+                                return
+                        }</span>
+
+                        // Store the validated token in context
+                        <span class="cov0" title="0">c.Set("tenant_token", token)</span>
+                }
+
+                // Validate tenant access
+                <span class="cov0" title="0">if err := tenantService.ValidateTenantAccess(c.Request.Context(), tenantID); err != nil </span><span class="cov0" title="0">{
+                        c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+                                "error":   "tenant_access_denied",
+                                "message": err.Error(),
+                        })
+                        return
+                }</span>
+
+                // Get tenant information
+                <span class="cov0" title="0">tenant, err := tenantService.GetTenant(c.Request.Context(), tenantID)
+                if err != nil </span><span class="cov0" title="0">{
+                        c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+                                "error":   "tenant_not_found",
+                                "message": "Tenant not found",
+                        })
+                        return
+                }</span>
+
+                // Store tenant information in context
+                <span class="cov0" title="0">c.Set("tenant_id", tenantID)
+                c.Set("tenant", tenant)
+
+                c.Next()</span>
+        }
+}
+
+// extractTenantID extracts tenant ID from various sources
+func extractTenantID(c *gin.Context) string <span class="cov0" title="0">{
+        // 1. From X-Tenant-Token header (highest priority)
+        if tenantToken := c.GetHeader("X-Tenant-Token"); tenantToken != "" </span><span class="cov0" title="0">{
+                // Extract tenant ID from tenant JWT token
+                tenantID := extractTenantFromJWT(tenantToken)
+                if tenantID != "" </span><span class="cov0" title="0">{
+                        return tenantID
+                }</span>
+        }
+
+        // 2. From Authorization header (Bearer token) - Tenant Token
+        <span class="cov0" title="0">if authHeader := c.GetHeader("Authorization"); authHeader != "" </span><span class="cov0" title="0">{
+                if strings.HasPrefix(authHeader, "Bearer ") </span><span class="cov0" title="0">{
+                        tokenString := authHeader[7:] // Remove "Bearer " prefix
+
+                        // Try to extract tenant ID from JWT token
+                        tenantID := extractTenantFromJWT(tokenString)
+                        if tenantID != "" </span><span class="cov0" title="0">{
+                                return tenantID
+                        }</span>
+                }
+        }
+
+        // 3. From X-Tenant-ID header
+        <span class="cov0" title="0">if tenantID := c.GetHeader("X-Tenant-ID"); tenantID != "" </span><span class="cov0" title="0">{
+                return tenantID
+        }</span>
+
+        // 4. From tenant_id cookie
+        <span class="cov0" title="0">if tenantID, err := c.Cookie("tenant_id"); err == nil &amp;&amp; tenantID != "" </span><span class="cov0" title="0">{
+                return tenantID
+        }</span>
+
+        // 5. From query parameter
+        <span class="cov0" title="0">if tenantID := c.Query("tenant_id"); tenantID != "" </span><span class="cov0" title="0">{
+                return tenantID
+        }</span>
+
+        // 6. From request body (for POST/PUT requests)
+        <span class="cov0" title="0">if c.Request.Method == "POST" || c.Request.Method == "PUT" </span><span class="cov0" title="0">{
+                // Try to get from JSON body
+                var body map[string]interface{}
+                if err := c.ShouldBindJSON(&amp;body); err == nil </span><span class="cov0" title="0">{
+                        if tenantID, ok := body["tenant_id"].(string); ok &amp;&amp; tenantID != "" </span><span class="cov0" title="0">{
+                                return tenantID
+                        }</span>
+                }
+        }
+
+        // 7. From URL path (e.g., /api/v1/tenants/{tenant_id}/users)
+        // This would require custom routing setup
+        // tenantID := c.Param("tenant_id")
+        // if tenantID != "" {
+        //     return tenantID
+        // }
+
+        <span class="cov0" title="0">return ""</span>
+}
+
+// extractTenantFromJWT extracts tenant ID from a JWT token
+func extractTenantFromJWT(tokenString string) string <span class="cov0" title="0">{
+        // Parse JWT token without validation (we just want to extract claims)
+        token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+        if err != nil </span><span class="cov0" title="0">{
+                return ""
+        }</span>
+
+        // Extract claims
+        <span class="cov0" title="0">claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok </span><span class="cov0" title="0">{
+                return ""
+        }</span>
+
+        // Check if this is a tenant token
+        <span class="cov0" title="0">if tokenType, ok := claims["type"].(string); ok &amp;&amp; tokenType == "tenant" </span><span class="cov0" title="0">{
+                if tenantID, ok := claims["tenant_id"].(string); ok &amp;&amp; tenantID != "" </span><span class="cov0" title="0">{
+                        return tenantID
+                }</span>
+        }
+
+        // Check if this is a user token with tenant_id
+        <span class="cov0" title="0">if tenantID, ok := claims["tenant_id"].(string); ok &amp;&amp; tenantID != "" </span><span class="cov0" title="0">{
+                return tenantID
+        }</span>
+
+        <span class="cov0" title="0">return ""</span>
+}
+
+// GetTenant retrieves tenant information from context
+func GetTenant(c *gin.Context) interface{} <span class="cov0" title="0">{
+        if tenant, exists := c.Get("tenant"); exists </span><span class="cov0" title="0">{
+                return tenant
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetTenantID retrieves tenant ID from context
+func GetTenantID(c *gin.Context) string <span class="cov0" title="0">{
+        if tenantID, exists := c.Get("tenant_id"); exists </span><span class="cov0" title="0">{
+                if id, ok := tenantID.(string); ok </span><span class="cov0" title="0">{
+                        return id
+                }</span>
+        }
+        <span class="cov0" title="0">return ""</span>
+}
+
+// GetTenantToken retrieves tenant token from context
+func GetTenantToken(c *gin.Context) interface{} <span class="cov0" title="0">{
+        if token, exists := c.Get("tenant_token"); exists </span><span class="cov0" title="0">{
+                return token
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// RequireTenantPlan middleware ensures tenant has required plan
+func RequireTenantPlan(requiredPlan string) gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                tenantInterface := GetTenant(c)
+                if tenantInterface == nil </span><span class="cov0" title="0">{
+                        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+                                "error":   "tenant_context_missing",
+                                "message": "Tenant context is missing",
+                        })
+                        return
+                }</span>
+
+                // Type assertion would be needed here
+                // tenant := tenantInterface.(*models.Tenant)
+                // if tenant.Plan != requiredPlan {
+                //     c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+                //         "error":   "insufficient_plan",
+                //         "message": fmt.Sprintf("Plan %s is required", requiredPlan),
+                //     })
+                //     return
+                // }
+
+                <span class="cov0" title="0">c.Next()</span>
+        }
+}
+
+// RequireTenantFeature middleware ensures tenant has required feature
+func RequireTenantFeature(requiredFeature string) gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                tenantInterface := GetTenant(c)
+                if tenantInterface == nil </span><span class="cov0" title="0">{
+                        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+                                "error":   "tenant_context_missing",
+                                "message": "Tenant context is missing",
+                        })
+                        return
+                }</span>
+
+                // Type assertion would be needed here
+                // tenant := tenantInterface.(*models.Tenant)
+                // hasFeature := false
+                // for _, feature := range tenant.Features {
+                //     if feature == requiredFeature {
+                //         hasFeature = true
+                //         break
+                //     }
+                // }
+                // if !hasFeature {
+                //     c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+                //         "error":   "feature_not_available",
+                //         "message": fmt.Sprintf("Feature %s is not available", requiredFeature),
+                //     })
+                //     return
+                // }
+
+                <span class="cov0" title="0">c.Next()</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file18" style="display: none">package models
+
+import (
+        "fmt"
+        "net/http"
+)
+
+// ErrorType represents the type of error
+type ErrorType string
+
+const (
+        // ErrorTypeValidation represents validation errors
+        ErrorTypeValidation ErrorType = "VALIDATION_ERROR"
+        // ErrorTypeAuthentication represents authentication errors
+        ErrorTypeAuthentication ErrorType = "AUTHENTICATION_ERROR"
+        // ErrorTypeAuthorization represents authorization errors
+        ErrorTypeAuthorization ErrorType = "AUTHORIZATION_ERROR"
+        // ErrorTypeQuotaExceeded represents quota exceeded errors
+        ErrorTypeQuotaExceeded ErrorType = "QUOTA_EXCEEDED"
+        // ErrorTypeFeatureDisabled represents feature disabled errors
+        ErrorTypeFeatureDisabled ErrorType = "FEATURE_DISABLED"
+        // ErrorTypeSubscription represents subscription errors
+        ErrorTypeSubscription ErrorType = "SUBSCRIPTION_ERROR"
+        // ErrorTypeServiceUnavailable represents service unavailable errors
+        ErrorTypeServiceUnavailable ErrorType = "SERVICE_UNAVAILABLE"
+        // ErrorTypeRateLimit represents rate limit errors
+        ErrorTypeRateLimit ErrorType = "RATE_LIMIT_EXCEEDED"
+        // ErrorTypeInternal represents internal server errors
+        ErrorTypeInternal ErrorType = "INTERNAL_ERROR"
+        // ErrorTypeNotFound represents not found errors
+        ErrorTypeNotFound ErrorType = "NOT_FOUND"
+)
+
+// ErrorCode represents specific error codes
+type ErrorCode string
+
+const (
+        // ErrorCodeInvalidRequest represents invalid request
+        ErrorCodeInvalidRequest ErrorCode = "INVALID_REQUEST"
+        // ErrorCodeMissingFields represents missing required fields
+        ErrorCodeMissingFields ErrorCode = "MISSING_FIELDS"
+        // ErrorCodeInvalidChannel represents invalid channel
+        ErrorCodeInvalidChannel ErrorCode = "INVALID_CHANNEL"
+        // ErrorCodeInvalidOTP represents invalid OTP
+        ErrorCodeInvalidOTP ErrorCode = "INVALID_OTP"
+        // ErrorCodeOTPExpired represents expired OTP
+        ErrorCodeOTPExpired ErrorCode = "OTP_EXPIRED"
+        // ErrorCodeOTPAlreadyUsed represents already used OTP
+        ErrorCodeOTPAlreadyUsed ErrorCode = "OTP_ALREADY_USED"
+        // ErrorCode2FAQuotaExceeded represents 2FA quota exceeded
+        ErrorCode2FAQuotaExceeded ErrorCode = "2FA_QUOTA_EXCEEDED"
+        // ErrorCodeFeatureDisabled represents feature disabled
+        ErrorCodeFeatureDisabled ErrorCode = "FEATURE_DISABLED"
+        // ErrorCodeInvalidSubscription represents invalid subscription
+        ErrorCodeInvalidSubscription ErrorCode = "INVALID_SUBSCRIPTION"
+        // ErrorCodeSubscriptionExpired represents expired subscription
+        ErrorCodeSubscriptionExpired ErrorCode = "SUBSCRIPTION_EXPIRED"
+        // ErrorCodeRateLimitExceeded represents rate limit exceeded
+        ErrorCodeRateLimitExceeded ErrorCode = "RATE_LIMIT_EXCEEDED"
+        // ErrorCodeServiceUnavailable represents service unavailable
+        ErrorCodeServiceUnavailable ErrorCode = "SERVICE_UNAVAILABLE"
+        // ErrorCodeInternalError represents internal server error
+        ErrorCodeInternalError ErrorCode = "INTERNAL_ERROR"
+        // ErrorCodeNotFound represents resource not found
+        ErrorCodeNotFound ErrorCode = "NOT_FOUND"
+        // ErrorCodeAuthentication represents authentication error
+        ErrorCodeAuthentication ErrorCode = "AUTHENTICATION_ERROR"
+        // ErrorCodeAuthorization represents authorization error
+        ErrorCodeAuthorization ErrorCode = "AUTHORIZATION_ERROR"
+)
+
+// APIError represents a structured API error response
+type APIError struct {
+        Type       ErrorType `json:"type"`
+        Code       ErrorCode `json:"code"`
+        Message    string    `json:"message"`
+        Details    string    `json:"details,omitempty"`
+        HTTPStatus int       `json:"-"`
+        RequestID  string    `json:"request_id,omitempty"`
+        Timestamp  string    `json:"timestamp,omitempty"`
+}
+
+// Error implements the error interface
+func (e *APIError) Error() string <span class="cov0" title="0">{
+        return fmt.Sprintf("[%s] %s: %s", e.Code, e.Type, e.Message)
+}</span>
+
+// NewAPIError creates a new API error
+func NewAPIError(errorType ErrorType, code ErrorCode, message string, httpStatus int) *APIError <span class="cov0" title="0">{
+        return &amp;APIError{
+                Type:       errorType,
+                Code:       code,
+                Message:    message,
+                HTTPStatus: httpStatus,
+        }
+}</span>
+
+// ErrorMapping maps error codes to HTTP status codes and types
+var ErrorMapping = map[ErrorCode]struct {
+        HTTPStatus int
+        ErrorType  ErrorType
+        Message    string
+}{
+        ErrorCodeInvalidRequest: {
+                HTTPStatus: http.StatusBadRequest,
+                ErrorType:  ErrorTypeValidation,
+                Message:    "Invalid request format",
+        },
+        ErrorCodeMissingFields: {
+                HTTPStatus: http.StatusBadRequest,
+                ErrorType:  ErrorTypeValidation,
+                Message:    "Missing required fields",
+        },
+        ErrorCodeInvalidChannel: {
+                HTTPStatus: http.StatusBadRequest,
+                ErrorType:  ErrorTypeValidation,
+                Message:    "Invalid channel specified",
+        },
+        ErrorCodeInvalidOTP: {
+                HTTPStatus: http.StatusUnauthorized,
+                ErrorType:  ErrorTypeAuthentication,
+                Message:    "Invalid OTP code",
+        },
+        ErrorCodeOTPExpired: {
+                HTTPStatus: http.StatusUnauthorized,
+                ErrorType:  ErrorTypeAuthentication,
+                Message:    "OTP code has expired",
+        },
+        ErrorCodeOTPAlreadyUsed: {
+                HTTPStatus: http.StatusUnauthorized,
+                ErrorType:  ErrorTypeAuthentication,
+                Message:    "OTP code has already been used",
+        },
+        ErrorCode2FAQuotaExceeded: {
+                HTTPStatus: http.StatusTooManyRequests,
+                ErrorType:  ErrorTypeQuotaExceeded,
+                Message:    "2FA quota exceeded",
+        },
+        ErrorCodeFeatureDisabled: {
+                HTTPStatus: http.StatusForbidden,
+                ErrorType:  ErrorTypeFeatureDisabled,
+                Message:    "Feature is disabled",
+        },
+        ErrorCodeInvalidSubscription: {
+                HTTPStatus: http.StatusPaymentRequired,
+                ErrorType:  ErrorTypeSubscription,
+                Message:    "Invalid subscription",
+        },
+        ErrorCodeSubscriptionExpired: {
+                HTTPStatus: http.StatusPaymentRequired,
+                ErrorType:  ErrorTypeSubscription,
+                Message:    "Subscription has expired",
+        },
+        ErrorCodeRateLimitExceeded: {
+                HTTPStatus: http.StatusTooManyRequests,
+                ErrorType:  ErrorTypeRateLimit,
+                Message:    "Rate limit exceeded",
+        },
+        ErrorCodeServiceUnavailable: {
+                HTTPStatus: http.StatusServiceUnavailable,
+                ErrorType:  ErrorTypeServiceUnavailable,
+                Message:    "Service temporarily unavailable",
+        },
+        ErrorCodeInternalError: {
+                HTTPStatus: http.StatusInternalServerError,
+                ErrorType:  ErrorTypeInternal,
+                Message:    "Internal server error",
+        },
+        ErrorCodeNotFound: {
+                HTTPStatus: http.StatusNotFound,
+                ErrorType:  ErrorTypeNotFound,
+                Message:    "Resource not found",
+        },
+        ErrorCodeAuthentication: {
+                HTTPStatus: http.StatusUnauthorized,
+                ErrorType:  ErrorTypeAuthentication,
+                Message:    "Authentication failed",
+        },
+        ErrorCodeAuthorization: {
+                HTTPStatus: http.StatusForbidden,
+                ErrorType:  ErrorTypeAuthorization,
+                Message:    "Authorization failed",
+        },
+}
+
+// GetErrorInfo returns error information for a given error code
+func GetErrorInfo(code ErrorCode) (int, ErrorType, string) <span class="cov0" title="0">{
+        if info, exists := ErrorMapping[code]; exists </span><span class="cov0" title="0">{
+                return info.HTTPStatus, info.ErrorType, info.Message
+        }</span>
+        // Default to internal error if code not found
+        <span class="cov0" title="0">return http.StatusInternalServerError, ErrorTypeInternal, "Unknown error"</span>
+}
+
+// CreateError creates an API error from an error code
+func CreateError(code ErrorCode, details ...string) *APIError <span class="cov0" title="0">{
+        httpStatus, errorType, message := GetErrorInfo(code)
+
+        apiError := NewAPIError(errorType, code, message, httpStatus)
+        if len(details) &gt; 0 </span><span class="cov0" title="0">{
+                apiError.Details = details[0]
+        }</span>
+
+        <span class="cov0" title="0">return apiError</span>
+}
+
+// Channel mapping for 2FA channels
+var ChannelMapping = map[string]struct {
+        Feature     string
+        ChannelType string
+}{
+        "EMAIL": {
+                Feature:     "2FA_EMAIL",
+                ChannelType: "EMAIL",
+        },
+        "SMS": {
+                Feature:     "2FA_SMS",
+                ChannelType: "SMS",
+        },
+}
+
+// GetChannelInfo returns channel information
+func GetChannelInfo(channel string) (string, string, bool) <span class="cov0" title="0">{
+        if info, exists := ChannelMapping[channel]; exists </span><span class="cov0" title="0">{
+                return info.Feature, info.ChannelType, true
+        }</span>
+        <span class="cov0" title="0">return "", "", false</span>
+}
+
+// ValidChannels returns list of valid channels
+func ValidChannels() []string <span class="cov0" title="0">{
+        channels := make([]string, 0, len(ChannelMapping))
+        for channel := range ChannelMapping </span><span class="cov0" title="0">{
+                channels = append(channels, channel)
+        }</span>
+        <span class="cov0" title="0">return channels</span>
+}
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">package service
+
+import (
+        "crypto/rand"
+        "encoding/base32"
+        "fmt"
+        "strings"
+        "time"
+
+        "github.com/pquerna/otp"
+        "github.com/pquerna/otp/totp"
+        "github.com/skip2/go-qrcode"
+)
+
+// MFAService defines the interface for MFA operations
+type MFAService interface {
+        GenerateSecret(userID, tenantID string) (string, error)
+        GenerateQRCode(secret, email, issuer string) ([]byte, error)
+        ValidateTOTP(secret, code string) (bool, error)
+        GenerateBackupCodes() ([]string, error)
+}
+
+type mfaService struct{}
+
+func NewMFAService() MFAService <span class="cov0" title="0">{
+        return &amp;mfaService{}
+}</span>
+
+// GenerateSecret creates a new TOTP secret for a user
+func (s *mfaService) GenerateSecret(userID, tenantID string) (string, error) <span class="cov0" title="0">{
+        // Generate a random base32 secret
+        buf := make([]byte, 10)
+        _, err := rand.Read(buf)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+        <span class="cov0" title="0">return strings.ToUpper(base32.StdEncoding.EncodeToString(buf)), nil</span>
+}
+
+// GenerateQRCode returns a PNG QR code for Google Authenticator setup
+func (s *mfaService) GenerateQRCode(secret, email, issuer string) ([]byte, error) <span class="cov0" title="0">{
+        otpURL := totp.GenerateOpts{
+                Issuer:      issuer,
+                AccountName: email,
+                Secret:      []byte(secret),
+        }
+        key, err := totp.Generate(otpURL)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return qrcode.Encode(key.URL(), qrcode.Medium, 256)</span>
+}
+
+// ValidateTOTP checks if the provided code is valid for the secret
+func (s *mfaService) ValidateTOTP(secret, code string) (bool, error) <span class="cov0" title="0">{
+        valid, err := totp.ValidateCustom(code, secret, time.Now(), totp.ValidateOpts{
+                Period:    30,
+                Skew:      1,
+                Digits:    otp.DigitsSix,
+                Algorithm: otp.AlgorithmSHA1,
+        })
+        return valid, err
+}</span>
+
+// GenerateBackupCodes creates a set of backup codes
+func (s *mfaService) GenerateBackupCodes() ([]string, error) <span class="cov0" title="0">{
+        codes := make([]string, 8)
+        for i := 0; i &lt; 8; i++ </span><span class="cov0" title="0">{
+                buf := make([]byte, 5)
+                _, err := rand.Read(buf)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov0" title="0">codes[i] = fmt.Sprintf("%06d", int(buf[0])&lt;&lt;8|int(buf[1]))</span>
+        }
+        <span class="cov0" title="0">return codes, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package service
+
+import (
+        "auth-service/internal/config"
+        "auth-service/internal/models"
+        "bytes"
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "time"
+
+        "github.com/sony/gobreaker"
+)
+
+// NotificationClient defines the interface for Notification Service communication
+type NotificationClient interface {
+        SendNotification(ctx context.Context, payload *models.NotificationPayload) (*models.NotificationResponse, error)
+        GetCircuitBreakerState() gobreaker.State
+}
+
+// notificationClient implements NotificationClient
+type notificationClient struct {
+        httpClient     *http.Client
+        baseURL        string
+        circuitBreaker *gobreaker.CircuitBreaker
+        config         config.NotificationServiceConfig
+}
+
+// NewNotificationClient creates a new Notification Service client
+func NewNotificationClient(cfg config.NotificationServiceConfig) NotificationClient <span class="cov6" title="3">{
+        circuitBreaker := cfg.CircuitBreaker.CreateCircuitBreaker("notification-service")
+
+        return &amp;notificationClient{
+                httpClient: &amp;http.Client{
+                        Timeout: cfg.Timeout,
+                },
+                baseURL:        cfg.BaseURL,
+                circuitBreaker: circuitBreaker,
+                config:         cfg,
+        }
+}</span>
+
+// SendNotification sends a templated notification to the Notification Service
+func (c *notificationClient) SendNotification(ctx context.Context, payload *models.NotificationPayload) (*models.NotificationResponse, error) <span class="cov0" title="0">{
+        // Use circuit breaker to protect against service failures
+        result, err := c.circuitBreaker.Execute(func() (interface{}, error) </span><span class="cov0" title="0">{
+                return c.sendNotificationWithRetry(ctx, payload)
+        }</span>)
+
+        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                // Check if it's a circuit breaker error
+                if err == gobreaker.ErrOpenState </span><span class="cov0" title="0">{
+                        return nil, models.CreateError(models.ErrorCodeServiceUnavailable, "Notification service circuit breaker is open")
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("notification service error: %w", err)</span>
+        }
+
+        <span class="cov0" title="0">response, ok := result.(*models.NotificationResponse)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, models.CreateError(models.ErrorCodeInternalError, "Invalid response type from notification service")
+        }</span>
+
+        <span class="cov0" title="0">return response, nil</span>
+}
+
+// sendNotificationWithRetry sends notification with retry logic
+func (c *notificationClient) sendNotificationWithRetry(ctx context.Context, payload *models.NotificationPayload) (*models.NotificationResponse, error) <span class="cov0" title="0">{
+        // Convert payload to JSON
+        jsonData, err := json.Marshal(payload)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to marshal notification payload: %w", err)
+        }</span>
+
+        // Create HTTP request
+        <span class="cov0" title="0">req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/notifications/send", bytes.NewBuffer(jsonData))
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("X-Service-Name", "auth-service")
+        req.Header.Set("X-Request-ID", getRequestID(ctx))
+
+        // Send request with retry logic
+        var lastErr error
+        for attempt := 1; attempt &lt;= c.config.MaxRetries; attempt++ </span><span class="cov0" title="0">{
+                resp, err := c.httpClient.Do(req)
+                if err != nil </span><span class="cov0" title="0">{
+                        lastErr = fmt.Errorf("HTTP request failed (attempt %d): %w", attempt, err)
+
+                        // If this is not the last attempt, wait before retrying
+                        if attempt &lt; c.config.MaxRetries </span><span class="cov0" title="0">{
+                                backoff := time.Duration(attempt) * c.config.RetryDelay
+                                select </span>{
+                                case &lt;-ctx.Done():<span class="cov0" title="0">
+                                        return nil, ctx.Err()</span>
+                                case &lt;-time.After(backoff):<span class="cov0" title="0">
+                                        continue</span>
+                                }
+                        }
+                        <span class="cov0" title="0">continue</span>
+                }
+
+                // If we got a response, process it
+                <span class="cov0" title="0">return c.processResponse(resp)</span>
+        }
+
+        <span class="cov0" title="0">return nil, fmt.Errorf("all retry attempts failed: %w", lastErr)</span>
+}
+
+// processResponse processes the HTTP response
+func (c *notificationClient) processResponse(resp *http.Response) (*models.NotificationResponse, error) <span class="cov0" title="0">{
+        defer resp.Body.Close()
+
+        // Read response body
+        body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to read response body: %w", err)
+        }</span>
+
+        // Parse response
+        <span class="cov0" title="0">var notificationResp models.NotificationResponse
+        if err := json.Unmarshal(body, &amp;notificationResp); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal notification response: %w", err)
+        }</span>
+
+        // Check HTTP status code and handle errors
+        <span class="cov0" title="0">switch resp.StatusCode </span>{
+        case http.StatusOK, http.StatusCreated, http.StatusAccepted:<span class="cov0" title="0">
+                return &amp;notificationResp, nil</span>
+        case http.StatusBadRequest:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeInvalidRequest, notificationResp.Error)</span>
+        case http.StatusUnauthorized:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeAuthentication, notificationResp.Error)</span>
+        case http.StatusForbidden:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeAuthorization, notificationResp.Error)</span>
+        case http.StatusTooManyRequests:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeRateLimitExceeded, notificationResp.Error)</span>
+        case http.StatusInternalServerError:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeInternalError, notificationResp.Error)</span>
+        case http.StatusServiceUnavailable:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeServiceUnavailable, notificationResp.Error)</span>
+        default:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeServiceUnavailable,
+                        fmt.Sprintf("unexpected status code: %d", resp.StatusCode))</span>
+        }
+}
+
+// GetCircuitBreakerState returns the current circuit breaker state
+func (c *notificationClient) GetCircuitBreakerState() gobreaker.State <span class="cov0" title="0">{
+        return c.circuitBreaker.State()
+}</span>
+
+// getRequestID extracts request ID from context
+func getRequestID(ctx context.Context) string <span class="cov0" title="0">{
+        if requestID, ok := ctx.Value("request_id").(string); ok </span><span class="cov0" title="0">{
+                return requestID
+        }</span>
+        <span class="cov0" title="0">return "unknown"</span>
+}
+
+// MockNotificationClient for testing
+type MockNotificationClient struct {
+        SendNotificationFunc func(ctx context.Context, payload *models.NotificationPayload) (*models.NotificationResponse, error)
+        CircuitBreakerState  gobreaker.State
+}
+
+func (m *MockNotificationClient) SendNotification(ctx context.Context, payload *models.NotificationPayload) (*models.NotificationResponse, error) <span class="cov10" title="6">{
+        if m.SendNotificationFunc != nil </span><span class="cov10" title="6">{
+                return m.SendNotificationFunc(ctx, payload)
+        }</span>
+        <span class="cov0" title="0">return &amp;models.NotificationResponse{Success: true, MessageID: "mock-message-id"}, nil</span>
+}
+
+func (m *MockNotificationClient) GetCircuitBreakerState() gobreaker.State <span class="cov0" title="0">{
+        return m.CircuitBreakerState
+}</span>
+</pre>
+		
+		<pre class="file" id="file21" style="display: none">package service
+
+import (
+        "auth-service/internal/config"
+        "auth-service/internal/models"
+        "context"
+        "crypto/rand"
+        "fmt"
+        "log"
+        "math"
+        "sync"
+        "time"
+)
+
+// OTPService defines the interface for OTP operations
+type OTPService interface {
+        GenerateAndSendOTP(req *models.OTPRequest, config *models.TenantOTPConfig) (*models.OTPResponse, error)
+        ValidateOTP(req *models.OTPVerifyRequest) (bool, error)
+        GetTenantOTPConfig(tenantID string) (*models.TenantOTPConfig, error)
+        UpdateUserOTPPreference(pref *models.UserOTPPreference) error
+        GetSMSUsageInfo(tenantID string) (*models.SMSUsageInfo, error)
+        ResetBillingCycle(tenantID string) error
+        TriggerTwoFactorAuth(ctx context.Context, req *models.TwoFactorAuthRequest) (*models.TwoFactorAuthResponse, error)
+}
+
+type otpService struct {
+        store              map[string]*models.OTPRecord
+        usage              map[string]*models.TenantOTPConfig // Track usage per tenant
+        notificationClient NotificationClient
+        subscriptionClient SubscriptionClient
+        mu                 sync.Mutex
+}
+
+// NewOTPService creates a new OTP service with default configuration
+func NewOTPService() OTPService <span class="cov3" title="3">{
+        serviceConfig := config.DefaultServiceConfig()
+
+        return &amp;otpService{
+                store:              make(map[string]*models.OTPRecord),
+                usage:              make(map[string]*models.TenantOTPConfig),
+                notificationClient: NewNotificationClient(serviceConfig.NotificationService),
+                subscriptionClient: NewSubscriptionClient(serviceConfig.SubscriptionService),
+        }
+}</span>
+
+// NewOTPServiceWithConfig creates OTP service with custom configuration
+func NewOTPServiceWithConfig(serviceConfig *config.ServiceConfig) OTPService <span class="cov0" title="0">{
+        return &amp;otpService{
+                store:              make(map[string]*models.OTPRecord),
+                usage:              make(map[string]*models.TenantOTPConfig),
+                notificationClient: NewNotificationClient(serviceConfig.NotificationService),
+                subscriptionClient: NewSubscriptionClient(serviceConfig.SubscriptionService),
+        }
+}</span>
+
+// NewOTPServiceWithClients creates OTP service with custom clients (for testing)
+func NewOTPServiceWithClients(notificationClient NotificationClient, subscriptionClient SubscriptionClient) OTPService <span class="cov1" title="1">{
+        return &amp;otpService{
+                store:              make(map[string]*models.OTPRecord),
+                usage:              make(map[string]*models.TenantOTPConfig),
+                notificationClient: notificationClient,
+                subscriptionClient: subscriptionClient,
+        }
+}</span>
+
+// GenerateAndSendOTP generates and sends OTP based on field type and tenant configuration
+func (s *otpService) GenerateAndSendOTP(req *models.OTPRequest, config *models.TenantOTPConfig) (*models.OTPResponse, error) <span class="cov7" title="17">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        // Validate that at least one field is provided
+        if req.Email == "" &amp;&amp; req.Mobile == "" </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("either email or mobile number is required")
+        }</span>
+
+        // Determine field type and validate
+        <span class="cov7" title="17">fieldType, err := s.determineFieldType(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Determine delivery method based on field type and tenant config
+        <span class="cov7" title="17">deliveryMethod := s.determineDeliveryMethod(req, config, fieldType)
+
+        // Validate that the chosen method is enabled for the tenant
+        if !s.isDeliveryMethodEnabled(deliveryMethod, config) </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("delivery method %s is not enabled for this tenant", deliveryMethod)
+        }</span>
+
+        // Validate field type against tenant configuration
+        <span class="cov7" title="17">if !s.isFieldTypeAllowed(fieldType, config) </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("field type %s is not allowed for this tenant", fieldType)
+        }</span>
+
+        // Check SMS limits if SMS delivery is requested
+        <span class="cov7" title="17">if deliveryMethod == models.OTPDeliverySMS || deliveryMethod == models.OTPDeliveryBoth </span><span class="cov0" title="0">{
+                if err := s.checkSMSLimit(config); err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+        }
+
+        // Generate OTP with tenant-specific digit length
+        <span class="cov7" title="17">digitLength := config.OTPDigitLength
+        if digitLength == 0 </span><span class="cov1" title="1">{
+                digitLength = 6 // default to 6 digits
+        }</span>
+
+        // Validate digit length (between 4 and 10 digits for security)
+        <span class="cov7" title="17">if digitLength &lt; 4 || digitLength &gt; 10 </span><span class="cov4" title="5">{
+                return nil, fmt.Errorf("invalid OTP digit length: %d (must be between 4 and 10)", digitLength)
+        }</span>
+
+        // Calculate min and max values for the digit length
+        <span class="cov6" title="12">min := int(math.Pow10(digitLength - 1)) // e.g., for 4 digits: 1000
+        max := int(math.Pow10(digitLength)) - 1 // e.g., for 4 digits: 9999
+
+        code := fmt.Sprintf("%0*d", digitLength, randomInt(min, max))
+        expirationMinutes := config.OTPExpirationMinutes
+        if expirationMinutes == 0 </span><span class="cov5" title="8">{
+                expirationMinutes = 5 // default 5 minutes
+        }</span>
+
+        <span class="cov6" title="12">record := &amp;models.OTPRecord{
+                Email:          req.Email,
+                Mobile:         req.Mobile,
+                TenantID:       req.TenantID,
+                Code:           code,
+                DeliveryMethod: deliveryMethod,
+                FieldType:      fieldType,
+                ExpiresAt:      time.Now().Add(time.Duration(expirationMinutes) * time.Minute),
+                Used:           false,
+                CreatedAt:      time.Now(),
+        }
+
+        key := s.generateKey(req, fieldType)
+        s.store[key] = record
+
+        // Track usage and send OTP
+        var smsUsageInfo *models.SMSUsageInfo
+        switch deliveryMethod </span>{
+        case models.OTPDeliveryEmail:<span class="cov6" title="12">
+                if fieldType == models.OTPFieldEmail </span><span class="cov6" title="12">{
+                        s.sendEmailOTP(req.Email, code, req.TenantID)
+                }</span> else<span class="cov0" title="0"> {
+                        return nil, fmt.Errorf("email delivery method requires email field type")
+                }</span>
+        case models.OTPDeliverySMS:<span class="cov0" title="0">
+                if fieldType == models.OTPFieldMobile </span><span class="cov0" title="0">{
+                        s.sendSMSOTP(req.Mobile, code, req.TenantID)
+                        s.incrementSMSUsage(config)
+                        smsUsageInfo = s.getSMSUsageInfo(config)
+                }</span> else<span class="cov0" title="0"> {
+                        return nil, fmt.Errorf("SMS delivery method requires mobile field type")
+                }</span>
+        case models.OTPDeliveryBoth:<span class="cov0" title="0">
+                if req.Email != "" </span><span class="cov0" title="0">{
+                        s.sendEmailOTP(req.Email, code, req.TenantID)
+                }</span>
+                <span class="cov0" title="0">if req.Mobile != "" </span><span class="cov0" title="0">{
+                        s.sendSMSOTP(req.Mobile, code, req.TenantID)
+                        s.incrementSMSUsage(config)
+                        smsUsageInfo = s.getSMSUsageInfo(config)
+                }</span>
+        }
+
+        <span class="cov6" title="12">availableMethods := s.getAvailableMethods(config)
+        availableFields := s.getAvailableFields(config)
+
+        return &amp;models.OTPResponse{
+                Message:          fmt.Sprintf("OTP sent via %s to %s", deliveryMethod, fieldType),
+                DeliveryMethod:   deliveryMethod,
+                FieldType:        fieldType,
+                ExpiresIn:        expirationMinutes * 60,
+                OTPDigitLength:   digitLength,
+                AvailableMethods: availableMethods,
+                AvailableFields:  availableFields,
+                SMSUsageInfo:     smsUsageInfo,
+        }, nil</span>
+}
+
+// ValidateOTP checks if the OTP is valid and not expired/used
+func (s *otpService) ValidateOTP(req *models.OTPVerifyRequest) (bool, error) <span class="cov3" title="3">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        // Determine field type from request
+        fieldType, err := s.determineFieldTypeFromVerify(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, err
+        }</span>
+
+        <span class="cov3" title="3">key := s.generateKeyFromVerify(req, fieldType)
+        record, ok := s.store[key]
+        if !ok </span><span class="cov0" title="0">{
+                return false, nil
+        }</span>
+
+        <span class="cov3" title="3">if record.Used || time.Now().After(record.ExpiresAt) </span><span class="cov0" title="0">{
+                return false, nil
+        }</span>
+
+        <span class="cov3" title="3">if record.Code != req.Code </span><span class="cov3" title="3">{
+                return false, nil
+        }</span>
+
+        <span class="cov0" title="0">record.Used = true
+        return true, nil</span>
+}
+
+// GetTenantOTPConfig returns OTP configuration for a tenant
+func (s *otpService) GetTenantOTPConfig(tenantID string) (*models.TenantOTPConfig, error) <span class="cov6" title="10">{
+        // In real implementation, fetch from database
+        // For demo, return default config based on tenant plan
+        var config *models.TenantOTPConfig
+
+        switch tenantID </span>{
+        case "tenant-basic":<span class="cov2" title="2">
+                config = &amp;models.TenantOTPConfig{
+                        TenantID:              tenantID,
+                        Plan:                  "basic",
+                        EnableEmailOTP:        true,
+                        EnableSMSOTP:          false,
+                        DefaultDeliveryMethod: models.OTPDeliveryEmail,
+                        AllowUserChoice:       false,
+                        AllowFieldChoice:      false,
+                        OTPExpirationMinutes:  5,
+                        OTPDigitLength:        4, // 4-digit OTP for basic plan
+                        MaxOTPAttempts:        3,
+                        RateLimitPerHour:      5,
+                        MonthlySMSLimit:       0, // No SMS for basic plan
+                        CurrentSMSUsage:       0,
+                        SMSCostPerMessage:     0.05,
+                        BillingCycleStart:     time.Now().Truncate(24 * time.Hour),
+                }</span>
+        case "tenant-pro":<span class="cov4" title="4">
+                config = &amp;models.TenantOTPConfig{
+                        TenantID:              tenantID,
+                        Plan:                  "pro",
+                        EnableEmailOTP:        true,
+                        EnableSMSOTP:          true,
+                        DefaultDeliveryMethod: models.OTPDeliveryUserChoice,
+                        AllowUserChoice:       true,
+                        AllowFieldChoice:      true,
+                        OTPExpirationMinutes:  10,
+                        OTPDigitLength:        6, // 6-digit OTP for pro plan
+                        MaxOTPAttempts:        5,
+                        RateLimitPerHour:      10,
+                        MonthlySMSLimit:       1000, // 1000 SMS per month
+                        CurrentSMSUsage:       0,
+                        SMSCostPerMessage:     0.05,
+                        BillingCycleStart:     time.Now().Truncate(24 * time.Hour),
+                }</span>
+        case "tenant-enterprise":<span class="cov2" title="2">
+                config = &amp;models.TenantOTPConfig{
+                        TenantID:              tenantID,
+                        Plan:                  "enterprise",
+                        EnableEmailOTP:        true,
+                        EnableSMSOTP:          true,
+                        DefaultDeliveryMethod: models.OTPDeliveryBoth,
+                        AllowUserChoice:       true,
+                        AllowFieldChoice:      true,
+                        OTPExpirationMinutes:  5,
+                        OTPDigitLength:        8, // 8-digit OTP for enterprise plan
+                        MaxOTPAttempts:        3,
+                        RateLimitPerHour:      5,
+                        MonthlySMSLimit:       10000, // 10,000 SMS per month
+                        CurrentSMSUsage:       0,
+                        SMSCostPerMessage:     0.05,
+                        BillingCycleStart:     time.Now().Truncate(24 * time.Hour),
+                }</span>
+        default:<span class="cov2" title="2">
+                // Default configuration for unknown tenants
+                config = &amp;models.TenantOTPConfig{
+                        TenantID:              tenantID,
+                        Plan:                  "default",
+                        EnableEmailOTP:        true,
+                        EnableSMSOTP:          false,
+                        DefaultDeliveryMethod: models.OTPDeliveryEmail,
+                        AllowUserChoice:       false,
+                        AllowFieldChoice:      false,
+                        OTPExpirationMinutes:  5,
+                        OTPDigitLength:        6, // Default to 6-digit OTP
+                        MaxOTPAttempts:        3,
+                        RateLimitPerHour:      5,
+                        MonthlySMSLimit:       0,
+                        CurrentSMSUsage:       0,
+                        SMSCostPerMessage:     0.05,
+                        BillingCycleStart:     time.Now().Truncate(24 * time.Hour),
+                }</span>
+        }
+
+        // Check if we need to reset billing cycle
+        <span class="cov6" title="10">s.checkAndResetBillingCycle(config)
+
+        // Load current usage from storage
+        if storedConfig, exists := s.usage[tenantID]; exists </span><span class="cov0" title="0">{
+                config.CurrentSMSUsage = storedConfig.CurrentSMSUsage
+                config.BillingCycleStart = storedConfig.BillingCycleStart
+        }</span>
+
+        <span class="cov6" title="10">return config, nil</span>
+}
+
+// GetSMSUsageInfo returns SMS usage information for a tenant
+func (s *otpService) GetSMSUsageInfo(tenantID string) (*models.SMSUsageInfo, error) <span class="cov0" title="0">{
+        config, err := s.GetTenantOTPConfig(tenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return s.getSMSUsageInfo(config), nil</span>
+}
+
+// ResetBillingCycle resets the billing cycle for a tenant
+func (s *otpService) ResetBillingCycle(tenantID string) error <span class="cov0" title="0">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        if storedConfig, exists := s.usage[tenantID]; exists </span><span class="cov0" title="0">{
+                storedConfig.CurrentSMSUsage = 0
+                storedConfig.BillingCycleStart = time.Now().Truncate(24 * time.Hour)
+                log.Printf("[OTP] Reset billing cycle for tenant %s", tenantID)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// UpdateUserOTPPreference updates user's OTP delivery preference
+func (s *otpService) UpdateUserOTPPreference(pref *models.UserOTPPreference) error <span class="cov0" title="0">{
+        // In real implementation, save to database
+        pref.UpdatedAt = time.Now()
+        log.Printf("[OTP] Updated user preference: %s prefers %s via %s", pref.UserID, pref.PreferredMethod, pref.PreferredField)
+        return nil
+}</span>
+
+// Helper methods
+func (s *otpService) checkSMSLimit(config *models.TenantOTPConfig) error <span class="cov0" title="0">{
+        if config.MonthlySMSLimit == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("SMS OTP is not available for %s plan", config.Plan)
+        }</span>
+
+        <span class="cov0" title="0">if config.CurrentSMSUsage &gt;= config.MonthlySMSLimit </span><span class="cov0" title="0">{
+                return fmt.Errorf("monthly SMS limit of %d reached for %s plan", config.MonthlySMSLimit, config.Plan)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (s *otpService) incrementSMSUsage(config *models.TenantOTPConfig) <span class="cov0" title="0">{
+        // Store usage in memory (in real implementation, save to database)
+        if storedConfig, exists := s.usage[config.TenantID]; exists </span><span class="cov0" title="0">{
+                storedConfig.CurrentSMSUsage++
+        }</span> else<span class="cov0" title="0"> {
+                s.usage[config.TenantID] = &amp;models.TenantOTPConfig{
+                        TenantID:          config.TenantID,
+                        CurrentSMSUsage:   1,
+                        BillingCycleStart: config.BillingCycleStart,
+                }
+        }</span>
+
+        <span class="cov0" title="0">log.Printf("[OTP] SMS usage incremented for tenant %s: %d/%d",
+                config.TenantID, s.usage[config.TenantID].CurrentSMSUsage, config.MonthlySMSLimit)</span>
+}
+
+func (s *otpService) getSMSUsageInfo(config *models.TenantOTPConfig) *models.SMSUsageInfo <span class="cov0" title="0">{
+        currentUsage := 0
+        if storedConfig, exists := s.usage[config.TenantID]; exists </span><span class="cov0" title="0">{
+                currentUsage = storedConfig.CurrentSMSUsage
+        }</span>
+
+        <span class="cov0" title="0">remaining := config.MonthlySMSLimit - currentUsage
+        if remaining &lt; 0 </span><span class="cov0" title="0">{
+                remaining = 0
+        }</span>
+
+        <span class="cov0" title="0">usagePercentage := 0.0
+        if config.MonthlySMSLimit &gt; 0 </span><span class="cov0" title="0">{
+                usagePercentage = math.Round((float64(currentUsage) / float64(config.MonthlySMSLimit)) * 100)
+        }</span>
+
+        <span class="cov0" title="0">billingCycleEnd := config.BillingCycleStart.AddDate(0, 1, 0)
+
+        return &amp;models.SMSUsageInfo{
+                MonthlyLimit:    config.MonthlySMSLimit,
+                CurrentUsage:    currentUsage,
+                RemainingSMS:    remaining,
+                UsagePercentage: usagePercentage,
+                BillingCycleEnd: billingCycleEnd,
+        }</span>
+}
+
+func (s *otpService) checkAndResetBillingCycle(config *models.TenantOTPConfig) <span class="cov6" title="10">{
+        // Check if billing cycle needs to be reset (monthly)
+        now := time.Now()
+        nextBillingCycle := config.BillingCycleStart.AddDate(0, 1, 0)
+
+        if now.After(nextBillingCycle) </span><span class="cov0" title="0">{
+                // Reset billing cycle
+                if storedConfig, exists := s.usage[config.TenantID]; exists </span><span class="cov0" title="0">{
+                        storedConfig.CurrentSMSUsage = 0
+                        storedConfig.BillingCycleStart = now.Truncate(24 * time.Hour)
+                        log.Printf("[OTP] Billing cycle reset for tenant %s", config.TenantID)
+                }</span>
+        }
+}
+
+func (s *otpService) determineFieldType(req *models.OTPRequest) (models.OTPFieldType, error) <span class="cov7" title="17">{
+        // If user specified field type, validate it
+        if req.FieldType != "" </span><span class="cov0" title="0">{
+                if req.FieldType == models.OTPFieldEmail &amp;&amp; req.Email == "" </span><span class="cov0" title="0">{
+                        return "", fmt.Errorf("email field type requires email address")
+                }</span>
+                <span class="cov0" title="0">if req.FieldType == models.OTPFieldMobile &amp;&amp; req.Mobile == "" </span><span class="cov0" title="0">{
+                        return "", fmt.Errorf("mobile field type requires mobile number")
+                }</span>
+                <span class="cov0" title="0">return req.FieldType, nil</span>
+        }
+
+        // Auto-determine based on provided fields
+        <span class="cov7" title="17">if req.Email != "" &amp;&amp; req.Mobile == "" </span><span class="cov7" title="17">{
+                return models.OTPFieldEmail, nil
+        }</span>
+        <span class="cov0" title="0">if req.Mobile != "" &amp;&amp; req.Email == "" </span><span class="cov0" title="0">{
+                return models.OTPFieldMobile, nil
+        }</span>
+        <span class="cov0" title="0">if req.Email != "" &amp;&amp; req.Mobile != "" </span><span class="cov0" title="0">{
+                // Both provided, default to email unless user specified mobile
+                return models.OTPFieldEmail, nil
+        }</span>
+
+        <span class="cov0" title="0">return "", fmt.Errorf("either email or mobile number is required")</span>
+}
+
+func (s *otpService) determineFieldTypeFromVerify(req *models.OTPVerifyRequest) (models.OTPFieldType, error) <span class="cov3" title="3">{
+        // If user specified field type, validate it
+        if req.FieldType != "" </span><span class="cov0" title="0">{
+                if req.FieldType == models.OTPFieldEmail &amp;&amp; req.Email == "" </span><span class="cov0" title="0">{
+                        return "", fmt.Errorf("email field type requires email address")
+                }</span>
+                <span class="cov0" title="0">if req.FieldType == models.OTPFieldMobile &amp;&amp; req.Mobile == "" </span><span class="cov0" title="0">{
+                        return "", fmt.Errorf("mobile field type requires mobile number")
+                }</span>
+                <span class="cov0" title="0">return req.FieldType, nil</span>
+        }
+
+        // Auto-determine based on provided fields
+        <span class="cov3" title="3">if req.Email != "" &amp;&amp; req.Mobile == "" </span><span class="cov3" title="3">{
+                return models.OTPFieldEmail, nil
+        }</span>
+        <span class="cov0" title="0">if req.Mobile != "" &amp;&amp; req.Email == "" </span><span class="cov0" title="0">{
+                return models.OTPFieldMobile, nil
+        }</span>
+        <span class="cov0" title="0">if req.Email != "" &amp;&amp; req.Mobile != "" </span><span class="cov0" title="0">{
+                // Both provided, default to email unless user specified mobile
+                return models.OTPFieldEmail, nil
+        }</span>
+
+        <span class="cov0" title="0">return "", fmt.Errorf("either email or mobile number is required")</span>
+}
+
+func (s *otpService) determineDeliveryMethod(req *models.OTPRequest, config *models.TenantOTPConfig, fieldType models.OTPFieldType) models.OTPDeliveryMethod <span class="cov7" title="17">{
+        // If user specified a method and it's allowed
+        if req.DeliveryMethod != "" &amp;&amp; s.isDeliveryMethodEnabled(req.DeliveryMethod, config) </span><span class="cov0" title="0">{
+                return req.DeliveryMethod
+        }</span>
+
+        // Auto-determine based on field type and tenant config
+        <span class="cov7" title="17">switch fieldType </span>{
+        case models.OTPFieldEmail:<span class="cov7" title="17">
+                if config.EnableEmailOTP </span><span class="cov7" title="17">{
+                        return models.OTPDeliveryEmail
+                }</span>
+        case models.OTPFieldMobile:<span class="cov0" title="0">
+                if config.EnableSMSOTP </span><span class="cov0" title="0">{
+                        return models.OTPDeliverySMS
+                }</span>
+        }
+
+        // Use tenant default
+        <span class="cov0" title="0">return config.DefaultDeliveryMethod</span>
+}
+
+func (s *otpService) isDeliveryMethodEnabled(method models.OTPDeliveryMethod, config *models.TenantOTPConfig) bool <span class="cov7" title="17">{
+        switch method </span>{
+        case models.OTPDeliveryEmail:<span class="cov7" title="17">
+                return config.EnableEmailOTP</span>
+        case models.OTPDeliverySMS:<span class="cov0" title="0">
+                return config.EnableSMSOTP</span>
+        case models.OTPDeliveryBoth:<span class="cov0" title="0">
+                return config.EnableEmailOTP &amp;&amp; config.EnableSMSOTP</span>
+        case models.OTPDeliveryUserChoice:<span class="cov0" title="0">
+                return config.AllowUserChoice</span>
+        default:<span class="cov0" title="0">
+                return false</span>
+        }
+}
+
+func (s *otpService) isFieldTypeAllowed(fieldType models.OTPFieldType, config *models.TenantOTPConfig) bool <span class="cov7" title="17">{
+        switch fieldType </span>{
+        case models.OTPFieldEmail:<span class="cov7" title="17">
+                return config.EnableEmailOTP</span>
+        case models.OTPFieldMobile:<span class="cov0" title="0">
+                return config.EnableSMSOTP</span>
+        default:<span class="cov0" title="0">
+                return false</span>
+        }
+}
+
+func (s *otpService) getAvailableMethods(config *models.TenantOTPConfig) []models.OTPDeliveryMethod <span class="cov6" title="12">{
+        var methods []models.OTPDeliveryMethod
+        if config.EnableEmailOTP </span><span class="cov6" title="12">{
+                methods = append(methods, models.OTPDeliveryEmail)
+        }</span>
+        <span class="cov6" title="12">if config.EnableSMSOTP </span><span class="cov2" title="2">{
+                methods = append(methods, models.OTPDeliverySMS)
+        }</span>
+        <span class="cov6" title="12">if config.EnableEmailOTP &amp;&amp; config.EnableSMSOTP </span><span class="cov2" title="2">{
+                methods = append(methods, models.OTPDeliveryBoth)
+        }</span>
+        <span class="cov6" title="12">if config.AllowUserChoice </span><span class="cov2" title="2">{
+                methods = append(methods, models.OTPDeliveryUserChoice)
+        }</span>
+        <span class="cov6" title="12">return methods</span>
+}
+
+func (s *otpService) getAvailableFields(config *models.TenantOTPConfig) []models.OTPFieldType <span class="cov6" title="12">{
+        var fields []models.OTPFieldType
+        if config.EnableEmailOTP </span><span class="cov6" title="12">{
+                fields = append(fields, models.OTPFieldEmail)
+        }</span>
+        <span class="cov6" title="12">if config.EnableSMSOTP </span><span class="cov2" title="2">{
+                fields = append(fields, models.OTPFieldMobile)
+        }</span>
+        <span class="cov6" title="12">return fields</span>
+}
+
+func (s *otpService) generateKey(req *models.OTPRequest, fieldType models.OTPFieldType) string <span class="cov6" title="12">{
+        switch fieldType </span>{
+        case models.OTPFieldEmail:<span class="cov6" title="12">
+                return req.Email + ":" + req.TenantID</span>
+        case models.OTPFieldMobile:<span class="cov0" title="0">
+                return req.Mobile + ":" + req.TenantID</span>
+        default:<span class="cov0" title="0">
+                return req.Email + ":" + req.TenantID</span>
+        }
+}
+
+func (s *otpService) generateKeyFromVerify(req *models.OTPVerifyRequest, fieldType models.OTPFieldType) string <span class="cov3" title="3">{
+        switch fieldType </span>{
+        case models.OTPFieldEmail:<span class="cov3" title="3">
+                return req.Email + ":" + req.TenantID</span>
+        case models.OTPFieldMobile:<span class="cov0" title="0">
+                return req.Mobile + ":" + req.TenantID</span>
+        default:<span class="cov0" title="0">
+                return req.Email + ":" + req.TenantID</span>
+        }
+}
+
+func (s *otpService) sendEmailOTP(email, code, tenantID string) <span class="cov6" title="12">{
+        // For demo: log to console (replace with email service)
+        log.Printf("[OTP-EMAIL] Sent OTP %s to %s (tenant: %s)", code, email, tenantID)
+}</span>
+
+func (s *otpService) sendSMSOTP(mobile, code, tenantID string) <span class="cov0" title="0">{
+        // For demo: log to console (replace with SMS service)
+        log.Printf("[OTP-SMS] Sent OTP %s to %s (tenant: %s)", code, mobile, tenantID)
+}</span>
+
+func randomInt(min, max int) int <span class="cov7" title="18">{
+        b := make([]byte, 2)
+        rand.Read(b)
+        return min + int(b[0])%((max-min)+1)
+}</span>
+
+// TriggerTwoFactorAuth triggers 2FA via Notification Service with subscription validation
+func (s *otpService) TriggerTwoFactorAuth(ctx context.Context, req *models.TwoFactorAuthRequest) (*models.TwoFactorAuthResponse, error) <span class="cov6" title="11">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        // Validate required fields using map-based validation
+        if err := s.validateTwoFactorRequest(req); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Get channel information using map lookup
+        <span class="cov6" title="11">feature, channelType, valid := models.GetChannelInfo(req.Channel)
+        if !valid </span><span class="cov1" title="1">{
+                return nil, models.CreateError(models.ErrorCodeInvalidChannel,
+                        fmt.Sprintf("Invalid channel: %s. Valid channels: %v", req.Channel, models.ValidChannels()))
+        }</span>
+
+        // Validate subscription and quota
+        <span class="cov6" title="10">subscriptionResp, err := s.validateSubscription(ctx, req.ClientID, feature)
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        // Check subscription validation results using map-based error handling
+        <span class="cov6" title="9">if err := s.checkSubscriptionValidation(subscriptionResp, req.Channel); err != nil </span><span class="cov3" title="3">{
+                return nil, err
+        }</span>
+
+        // Get tenant config for OTP settings
+        <span class="cov5" title="6">config, err := s.GetTenantOTPConfig(req.ClientID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, models.CreateError(models.ErrorCodeInternalError,
+                        fmt.Sprintf("failed to get tenant config: %v", err))
+        }</span>
+
+        // Generate OTP with tenant-specific digit length
+        <span class="cov5" title="6">code, digitLength, err := s.generateOTP(config)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Store OTP record
+        <span class="cov5" title="6">record, err := s.createOTPRecord(req, code, channelType, config)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Store OTP with key based on recipient and client
+        <span class="cov5" title="6">key := req.Recipient + ":" + req.ClientID
+        s.store[key] = record
+
+        // Prepare and send notification
+        notificationResp, err := s.sendNotification(ctx, req, code, channelType, config)
+        if err != nil </span><span class="cov1" title="1">{
+                // Remove the stored OTP since notification failed
+                delete(s.store, key)
+                return nil, err
+        }</span>
+
+        // Log the 2FA trigger
+        <span class="cov4" title="5">log.Printf("[2FA] Triggered %s 2FA for user %s (client: %s, message_id: %s)",
+                req.Channel, req.UserID, req.ClientID, notificationResp.MessageID)
+
+        return &amp;models.TwoFactorAuthResponse{
+                Success:        true,
+                Message:        fmt.Sprintf("2FA code sent via %s", req.Channel),
+                OTPDigitLength: digitLength,
+                ExpiresIn:      config.OTPExpirationMinutes * 60, // Convert to seconds
+                MessageID:      notificationResp.MessageID,
+        }, nil</span>
+}
+
+// validateTwoFactorRequest validates the 2FA request
+func (s *otpService) validateTwoFactorRequest(req *models.TwoFactorAuthRequest) error <span class="cov6" title="11">{
+        // Use map for required field validation
+        requiredFields := map[string]string{
+                "user_id":   req.UserID,
+                "client_id": req.ClientID,
+                "channel":   req.Channel,
+                "recipient": req.Recipient,
+        }
+
+        for field, value := range requiredFields </span><span class="cov10" title="44">{
+                if value == "" </span><span class="cov0" title="0">{
+                        return models.CreateError(models.ErrorCodeMissingFields,
+                                fmt.Sprintf("Missing required field: %s", field))
+                }</span>
+        }
+
+        <span class="cov6" title="11">return nil</span>
+}
+
+// validateSubscription validates subscription with the subscription service
+func (s *otpService) validateSubscription(ctx context.Context, clientID, feature string) (*models.SubscriptionValidationResponse, error) <span class="cov6" title="10">{
+        subscriptionReq := &amp;models.SubscriptionValidationRequest{
+                ClientID: clientID,
+                Feature:  feature,
+        }
+
+        subscriptionResp, err := s.subscriptionClient.ValidateSubscription(ctx, subscriptionReq)
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, models.CreateError(models.ErrorCodeServiceUnavailable,
+                        fmt.Sprintf("subscription validation failed: %v", err))
+        }</span>
+
+        <span class="cov6" title="9">return subscriptionResp, nil</span>
+}
+
+// checkSubscriptionValidation checks subscription validation results
+func (s *otpService) checkSubscriptionValidation(resp *models.SubscriptionValidationResponse, channel string) error <span class="cov6" title="9">{
+        // Use map for validation checks
+        validationChecks := map[string]struct {
+                condition bool
+                errorCode models.ErrorCode
+                message   string
+        }{
+                "subscription_valid": {
+                        condition: resp.Valid,
+                        errorCode: models.ErrorCodeInvalidSubscription,
+                        message:   "Client subscription is invalid",
+                },
+                "feature_enabled": {
+                        condition: resp.FeatureEnabled,
+                        errorCode: models.ErrorCodeFeatureDisabled,
+                        message:   fmt.Sprintf("2FA %s feature is not enabled for this client", channel),
+                },
+                "quota_available": {
+                        condition: resp.QuotaAvailable,
+                        errorCode: models.ErrorCode2FAQuotaExceeded,
+                        message:   fmt.Sprintf("The client's %s 2FA quota has been exceeded", channel),
+                },
+        }
+
+        for _, check := range validationChecks </span><span class="cov8" title="23">{
+                if !check.condition </span><span class="cov3" title="3">{
+                        return models.CreateError(check.errorCode, check.message)
+                }</span>
+        }
+
+        <span class="cov5" title="6">return nil</span>
+}
+
+// generateOTP generates OTP with tenant-specific digit length
+func (s *otpService) generateOTP(config *models.TenantOTPConfig) (string, int, error) <span class="cov5" title="6">{
+        digitLength := config.OTPDigitLength
+        if digitLength == 0 </span><span class="cov0" title="0">{
+                digitLength = 6 // default to 6 digits
+        }</span>
+
+        // Validate digit length (between 4 and 10 digits for security)
+        <span class="cov5" title="6">if digitLength &lt; 4 || digitLength &gt; 10 </span><span class="cov0" title="0">{
+                return "", 0, models.CreateError(models.ErrorCodeInvalidRequest,
+                        fmt.Sprintf("invalid OTP digit length: %d (must be between 4 and 10)", digitLength))
+        }</span>
+
+        // Calculate min and max values for the digit length
+        <span class="cov5" title="6">min := int(math.Pow10(digitLength - 1))
+        max := int(math.Pow10(digitLength)) - 1
+        code := fmt.Sprintf("%0*d", digitLength, randomInt(min, max))
+
+        return code, digitLength, nil</span>
+}
+
+// createOTPRecord creates an OTP record
+func (s *otpService) createOTPRecord(req *models.TwoFactorAuthRequest, code, channelType string, config *models.TenantOTPConfig) (*models.OTPRecord, error) <span class="cov5" title="6">{
+        // Set expiration time
+        expirationMinutes := config.OTPExpirationMinutes
+        if expirationMinutes == 0 </span><span class="cov0" title="0">{
+                expirationMinutes = 5 // default 5 minutes
+        }</span>
+
+        // Use map for delivery method mapping
+        <span class="cov5" title="6">deliveryMethodMap := map[string]models.OTPDeliveryMethod{
+                "EMAIL": models.OTPDeliveryEmail,
+                "SMS":   models.OTPDeliverySMS,
+        }
+
+        // Use map for field type mapping
+        fieldTypeMap := map[string]models.OTPFieldType{
+                "EMAIL": models.OTPFieldEmail,
+                "SMS":   models.OTPFieldMobile,
+        }
+
+        deliveryMethod, ok := deliveryMethodMap[channelType]
+        if !ok </span><span class="cov0" title="0">{
+                return nil, models.CreateError(models.ErrorCodeInvalidRequest,
+                        fmt.Sprintf("invalid channel type: %s", channelType))
+        }</span>
+
+        <span class="cov5" title="6">fieldType, ok := fieldTypeMap[channelType]
+        if !ok </span><span class="cov0" title="0">{
+                return nil, models.CreateError(models.ErrorCodeInvalidRequest,
+                        fmt.Sprintf("invalid channel type: %s", channelType))
+        }</span>
+
+        <span class="cov5" title="6">record := &amp;models.OTPRecord{
+                Email:          req.Recipient, // For both email and SMS, store in email field
+                Mobile:         req.Recipient, // For both email and SMS, store in mobile field
+                TenantID:       req.ClientID,
+                Code:           code,
+                DeliveryMethod: deliveryMethod,
+                FieldType:      fieldType,
+                ExpiresAt:      time.Now().Add(time.Duration(expirationMinutes) * time.Minute),
+                Used:           false,
+                CreatedAt:      time.Now(),
+        }
+
+        return record, nil</span>
+}
+
+// sendNotification sends notification via the notification service
+func (s *otpService) sendNotification(ctx context.Context, req *models.TwoFactorAuthRequest, code, channelType string, config *models.TenantOTPConfig) (*models.NotificationResponse, error) <span class="cov5" title="6">{
+        // Prepare notification payload
+        expiryUnit := models.ExpiryUnitMinutes
+        expiryValue := config.OTPExpirationMinutes
+        if expiryValue &gt;= 60 </span><span class="cov0" title="0">{
+                expiryUnit = models.ExpiryUnitHours
+                expiryValue = expiryValue / 60
+        }</span>
+
+        <span class="cov5" title="6">variables := map[string]interface{}{
+                "otp":          code,
+                "user_name":    req.UserName,
+                "expiry_value": expiryValue,
+                "expiry_unit":  expiryUnit,
+                "client_name":  req.ClientID, // In real implementation, get actual client name
+        }
+
+        notificationPayload := &amp;models.NotificationPayload{
+                ClientID:   req.ClientID,
+                Channel:    models.NotificationChannel(channelType),
+                TemplateID: "2FA_CODE",
+                Recipient:  req.Recipient,
+                Variables:  variables,
+        }
+
+        // Send notification
+        notificationResp, err := s.notificationClient.SendNotification(ctx, notificationPayload)
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, models.CreateError(models.ErrorCodeServiceUnavailable,
+                        fmt.Sprintf("failed to send notification: %v", err))
+        }</span>
+
+        <span class="cov4" title="5">return notificationResp, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file22" style="display: none">package service
+
+import (
+        "auth-service/internal/config"
+        "auth-service/internal/models"
+        "bytes"
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "time"
+
+        "github.com/sony/gobreaker"
+)
+
+// SubscriptionClient defines the interface for Subscription Service communication
+type SubscriptionClient interface {
+        ValidateSubscription(ctx context.Context, req *models.SubscriptionValidationRequest) (*models.SubscriptionValidationResponse, error)
+        GetCircuitBreakerState() gobreaker.State
+}
+
+// subscriptionClient implements SubscriptionClient
+type subscriptionClient struct {
+        httpClient     *http.Client
+        baseURL        string
+        circuitBreaker *gobreaker.CircuitBreaker
+        config         config.SubscriptionServiceConfig
+}
+
+// NewSubscriptionClient creates a new Subscription Service client
+func NewSubscriptionClient(cfg config.SubscriptionServiceConfig) SubscriptionClient <span class="cov5" title="3">{
+        circuitBreaker := cfg.CircuitBreaker.CreateCircuitBreaker("subscription-service")
+
+        return &amp;subscriptionClient{
+                httpClient: &amp;http.Client{
+                        Timeout: cfg.Timeout,
+                },
+                baseURL:        cfg.BaseURL,
+                circuitBreaker: circuitBreaker,
+                config:         cfg,
+        }
+}</span>
+
+// ValidateSubscription validates client subscription and quota for 2FA features
+func (c *subscriptionClient) ValidateSubscription(ctx context.Context, req *models.SubscriptionValidationRequest) (*models.SubscriptionValidationResponse, error) <span class="cov0" title="0">{
+        // Use circuit breaker to protect against service failures
+        result, err := c.circuitBreaker.Execute(func() (interface{}, error) </span><span class="cov0" title="0">{
+                return c.validateSubscriptionWithRetry(ctx, req)
+        }</span>)
+
+        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                // Check if it's a circuit breaker error
+                if err == gobreaker.ErrOpenState </span><span class="cov0" title="0">{
+                        return nil, models.CreateError(models.ErrorCodeServiceUnavailable, "Subscription service circuit breaker is open")
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("subscription service error: %w", err)</span>
+        }
+
+        <span class="cov0" title="0">response, ok := result.(*models.SubscriptionValidationResponse)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, models.CreateError(models.ErrorCodeInternalError, "Invalid response type from subscription service")
+        }</span>
+
+        <span class="cov0" title="0">return response, nil</span>
+}
+
+// validateSubscriptionWithRetry validates subscription with retry logic
+func (c *subscriptionClient) validateSubscriptionWithRetry(ctx context.Context, req *models.SubscriptionValidationRequest) (*models.SubscriptionValidationResponse, error) <span class="cov0" title="0">{
+        // Convert request to JSON
+        jsonData, err := json.Marshal(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to marshal subscription validation request: %w", err)
+        }</span>
+
+        // Create HTTP request
+        <span class="cov0" title="0">httpReq, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/subscriptions/validate", bytes.NewBuffer(jsonData))
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">httpReq.Header.Set("Content-Type", "application/json")
+        httpReq.Header.Set("X-Service-Name", "auth-service")
+        httpReq.Header.Set("X-Request-ID", getRequestID(ctx))
+
+        // Send request with retry logic
+        var lastErr error
+        for attempt := 1; attempt &lt;= c.config.MaxRetries; attempt++ </span><span class="cov0" title="0">{
+                resp, err := c.httpClient.Do(httpReq)
+                if err != nil </span><span class="cov0" title="0">{
+                        lastErr = fmt.Errorf("HTTP request failed (attempt %d): %w", attempt, err)
+
+                        // If this is not the last attempt, wait before retrying
+                        if attempt &lt; c.config.MaxRetries </span><span class="cov0" title="0">{
+                                backoff := time.Duration(attempt) * c.config.RetryDelay
+                                select </span>{
+                                case &lt;-ctx.Done():<span class="cov0" title="0">
+                                        return nil, ctx.Err()</span>
+                                case &lt;-time.After(backoff):<span class="cov0" title="0">
+                                        continue</span>
+                                }
+                        }
+                        <span class="cov0" title="0">continue</span>
+                }
+
+                // If we got a response, process it
+                <span class="cov0" title="0">return c.processResponse(resp)</span>
+        }
+
+        <span class="cov0" title="0">return nil, fmt.Errorf("all retry attempts failed: %w", lastErr)</span>
+}
+
+// processResponse processes the HTTP response
+func (c *subscriptionClient) processResponse(resp *http.Response) (*models.SubscriptionValidationResponse, error) <span class="cov0" title="0">{
+        defer resp.Body.Close()
+
+        // Read response body
+        body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to read response body: %w", err)
+        }</span>
+
+        // Parse response
+        <span class="cov0" title="0">var subscriptionResp models.SubscriptionValidationResponse
+        if err := json.Unmarshal(body, &amp;subscriptionResp); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal subscription response: %w", err)
+        }</span>
+
+        // Check HTTP status code and handle errors
+        <span class="cov0" title="0">switch resp.StatusCode </span>{
+        case http.StatusOK:<span class="cov0" title="0">
+                return &amp;subscriptionResp, nil</span>
+        case http.StatusBadRequest:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeInvalidRequest, subscriptionResp.Error)</span>
+        case http.StatusUnauthorized:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeAuthentication, subscriptionResp.Error)</span>
+        case http.StatusForbidden:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeAuthorization, subscriptionResp.Error)</span>
+        case http.StatusPaymentRequired:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeInvalidSubscription, subscriptionResp.Error)</span>
+        case http.StatusTooManyRequests:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeRateLimitExceeded, subscriptionResp.Error)</span>
+        case http.StatusInternalServerError:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeInternalError, subscriptionResp.Error)</span>
+        case http.StatusServiceUnavailable:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeServiceUnavailable, subscriptionResp.Error)</span>
+        default:<span class="cov0" title="0">
+                return nil, models.CreateError(models.ErrorCodeServiceUnavailable,
+                        fmt.Sprintf("unexpected status code: %d", resp.StatusCode))</span>
+        }
+}
+
+// GetCircuitBreakerState returns the current circuit breaker state
+func (c *subscriptionClient) GetCircuitBreakerState() gobreaker.State <span class="cov0" title="0">{
+        return c.circuitBreaker.State()
+}</span>
+
+// MockSubscriptionClient for testing
+type MockSubscriptionClient struct {
+        ValidateSubscriptionFunc func(ctx context.Context, req *models.SubscriptionValidationRequest) (*models.SubscriptionValidationResponse, error)
+        CircuitBreakerState      gobreaker.State
+}
+
+func (m *MockSubscriptionClient) ValidateSubscription(ctx context.Context, req *models.SubscriptionValidationRequest) (*models.SubscriptionValidationResponse, error) <span class="cov10" title="10">{
+        if m.ValidateSubscriptionFunc != nil </span><span class="cov10" title="10">{
+                return m.ValidateSubscriptionFunc(ctx, req)
+        }</span>
+
+        // Default mock response
+        <span class="cov0" title="0">return &amp;models.SubscriptionValidationResponse{
+                Valid:          true,
+                FeatureEnabled: true,
+                QuotaAvailable: true,
+                DailyQuota:     1000,
+                MonthlyQuota:   10000,
+                DailyUsage:     100,
+                MonthlyUsage:   1000,
+        }, nil</span>
+}
+
+func (m *MockSubscriptionClient) GetCircuitBreakerState() gobreaker.State <span class="cov0" title="0">{
+        return m.CircuitBreakerState
+}</span>
+</pre>
+		
+		<pre class="file" id="file23" style="display: none">package service
+
+import (
+        "auth-service/internal/models"
+        "context"
+        "crypto/rand"
+        "encoding/hex"
+        "errors"
+        "fmt"
+        "time"
+
+        "github.com/golang-jwt/jwt/v5"
+)
+
+// TenantService defines the interface for tenant operations
+type TenantService interface {
+        CreateTenant(ctx context.Context, tenant *models.Tenant) error
+        GetTenant(ctx context.Context, tenantID string) (*models.Tenant, error)
+        GetTenantByClientID(ctx context.Context, clientID string) (*models.Tenant, error)
+        UpdateTenant(ctx context.Context, tenant *models.Tenant) error
+        DeleteTenant(ctx context.Context, tenantID string) error
+        ListTenants(ctx context.Context, limit, offset int) ([]*models.Tenant, error)
+        GetTenantStats(ctx context.Context, tenantID string) (*models.TenantStats, error)
+        ValidateTenantAccess(ctx context.Context, tenantID string) error
+        UpdateTenantStats(ctx context.Context, stats *models.TenantStats) error
+
+        // Tenant Authentication
+        AuthenticateTenant(ctx context.Context, req *models.TenantAuthRequest) (*models.TenantAuthResponse, error)
+        ValidateTenantToken(ctx context.Context, token string) (*models.TenantToken, error)
+        RefreshTenantToken(ctx context.Context, refreshToken string) (*models.TenantAuthResponse, error)
+        RevokeTenantToken(ctx context.Context, token string) error
+}
+
+// tenantService implements TenantService
+type tenantService struct {
+        // TODO: Add database repository
+        // repo repository.TenantRepository
+}
+
+// NewTenantService creates a new tenant service
+func NewTenantService() TenantService <span class="cov0" title="0">{
+        return &amp;tenantService{}
+}</span>
+
+// CreateTenant creates a new tenant (client organization)
+func (s *tenantService) CreateTenant(ctx context.Context, tenant *models.Tenant) error <span class="cov0" title="0">{
+        // Validate tenant data
+        if tenant.Name == "" </span><span class="cov0" title="0">{
+                return errors.New("tenant name is required")
+        }</span>
+        <span class="cov0" title="0">if tenant.Domain == "" </span><span class="cov0" title="0">{
+                return errors.New("tenant domain is required")
+        }</span>
+
+        // Set default values
+        <span class="cov0" title="0">now := time.Now()
+        tenant.CreatedAt = now
+        tenant.UpdatedAt = now
+        tenant.Status = "active"
+
+        // Set default settings based on plan
+        s.setDefaultSettings(tenant)
+
+        // TODO: Save to database
+        // return s.repo.CreateTenant(ctx, tenant)
+
+        // Mock implementation
+        return nil</span>
+}
+
+// GetTenant retrieves a tenant by ID
+func (s *tenantService) GetTenant(ctx context.Context, tenantID string) (*models.Tenant, error) <span class="cov0" title="0">{
+        if tenantID == "" </span><span class="cov0" title="0">{
+                return nil, errors.New("tenant ID is required")
+        }</span>
+
+        // TODO: Get from database
+        // return s.repo.GetTenant(ctx, tenantID)
+
+        // Mock implementation
+        <span class="cov0" title="0">return &amp;models.Tenant{
+                ID:       tenantID,
+                Name:     "Example Client",
+                Domain:   "example.com",
+                Status:   "active",
+                Plan:     "pro",
+                MaxUsers: 1000,
+                Settings: models.TenantSettings{
+                        AllowedOrigins: []string{"https://example.com"},
+                        EnableOAuth:    true,
+                        EnableMFA:      true,
+                        SessionTimeout: 60,
+                },
+                CreatedAt: time.Now(),
+                UpdatedAt: time.Now(),
+        }, nil</span>
+}
+
+// UpdateTenant updates an existing tenant
+func (s *tenantService) UpdateTenant(ctx context.Context, tenant *models.Tenant) error <span class="cov0" title="0">{
+        if tenant.ID == "" </span><span class="cov0" title="0">{
+                return errors.New("tenant ID is required")
+        }</span>
+
+        <span class="cov0" title="0">tenant.UpdatedAt = time.Now()
+
+        // TODO: Update in database
+        // return s.repo.UpdateTenant(ctx, tenant)
+
+        // Mock implementation
+        return nil</span>
+}
+
+// DeleteTenant deletes a tenant
+func (s *tenantService) DeleteTenant(ctx context.Context, tenantID string) error <span class="cov0" title="0">{
+        if tenantID == "" </span><span class="cov0" title="0">{
+                return errors.New("tenant ID is required")
+        }</span>
+
+        // TODO: Delete from database
+        // return s.repo.DeleteTenant(ctx, tenantID)
+
+        // Mock implementation
+        <span class="cov0" title="0">return nil</span>
+}
+
+// ListTenants retrieves a list of tenants
+func (s *tenantService) ListTenants(ctx context.Context, limit, offset int) ([]*models.Tenant, error) <span class="cov0" title="0">{
+        // TODO: Get from database
+        // return s.repo.ListTenants(ctx, limit, offset)
+
+        // Mock implementation
+        return []*models.Tenant{
+                {
+                        ID:     "tenant-1",
+                        Name:   "Client A",
+                        Domain: "clienta.com",
+                        Status: "active",
+                        Plan:   "basic",
+                },
+                {
+                        ID:     "tenant-2",
+                        Name:   "Client B",
+                        Domain: "clientb.com",
+                        Status: "active",
+                        Plan:   "pro",
+                },
+        }, nil
+}</span>
+
+// GetTenantStats retrieves usage statistics for a tenant
+func (s *tenantService) GetTenantStats(ctx context.Context, tenantID string) (*models.TenantStats, error) <span class="cov0" title="0">{
+        if tenantID == "" </span><span class="cov0" title="0">{
+                return nil, errors.New("tenant ID is required")
+        }</span>
+
+        // TODO: Get from database
+        // return s.repo.GetTenantStats(ctx, tenantID)
+
+        // Mock implementation
+        <span class="cov0" title="0">return &amp;models.TenantStats{
+                TenantID:    tenantID,
+                TotalUsers:  150,
+                ActiveUsers: 120,
+                TotalLogins: 1250,
+                LastLoginAt: time.Now(),
+                StorageUsed: 1024 * 1024 * 50, // 50MB
+                APIRequests: 5000,
+                UpdatedAt:   time.Now(),
+        }, nil</span>
+}
+
+// ValidateTenantAccess validates if a tenant can access the service
+func (s *tenantService) ValidateTenantAccess(ctx context.Context, tenantID string) error <span class="cov0" title="0">{
+        tenant, err := s.GetTenant(ctx, tenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("tenant not found: %w", err)
+        }</span>
+
+        // Check if tenant is active
+        <span class="cov0" title="0">if tenant.Status != "active" </span><span class="cov0" title="0">{
+                return fmt.Errorf("tenant is %s", tenant.Status)
+        }</span>
+
+        // Check if tenant has expired
+        <span class="cov0" title="0">if tenant.ExpiresAt != nil &amp;&amp; time.Now().After(*tenant.ExpiresAt) </span><span class="cov0" title="0">{
+                return errors.New("tenant subscription has expired")
+        }</span>
+
+        // TODO: Check usage limits
+        // stats, err := s.GetTenantStats(ctx, tenantID)
+        // if err != nil {
+        //     return err
+        // }
+        // if stats.TotalUsers &gt;= tenant.MaxUsers {
+        //     return errors.New("tenant has reached maximum user limit")
+        // }
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// UpdateTenantStats updates usage statistics for a tenant
+func (s *tenantService) UpdateTenantStats(ctx context.Context, stats *models.TenantStats) error <span class="cov0" title="0">{
+        if stats.TenantID == "" </span><span class="cov0" title="0">{
+                return errors.New("tenant ID is required")
+        }</span>
+
+        <span class="cov0" title="0">stats.UpdatedAt = time.Now()
+
+        // TODO: Update in database
+        // return s.repo.UpdateTenantStats(ctx, stats)
+
+        // Mock implementation
+        return nil</span>
+}
+
+// setDefaultSettings sets default tenant settings based on plan
+func (s *tenantService) setDefaultSettings(tenant *models.Tenant) <span class="cov0" title="0">{
+        switch tenant.Plan </span>{
+        case "basic":<span class="cov0" title="0">
+                tenant.MaxUsers = 100
+                tenant.Settings = models.TenantSettings{
+                        AllowedOrigins:   []string{fmt.Sprintf("https://%s", tenant.Domain)},
+                        CustomBranding:   false,
+                        EnableOAuth:      false,
+                        EnableMFA:        false,
+                        SessionTimeout:   30,
+                        MaxLoginAttempts: 5,
+                        EnableAuditLog:   false,
+                        PasswordPolicy: models.PasswordPolicy{
+                                MinLength:      8,
+                                RequireUpper:   true,
+                                RequireLower:   true,
+                                RequireNumbers: true,
+                                RequireSpecial: false,
+                                MaxAge:         90,
+                        },
+                }</span>
+        case "pro":<span class="cov0" title="0">
+                tenant.MaxUsers = 1000
+                tenant.Settings = models.TenantSettings{
+                        AllowedOrigins:   []string{fmt.Sprintf("https://%s", tenant.Domain)},
+                        CustomBranding:   true,
+                        EnableOAuth:      true,
+                        EnableMFA:        true,
+                        SessionTimeout:   60,
+                        MaxLoginAttempts: 10,
+                        EnableAuditLog:   true,
+                        PasswordPolicy: models.PasswordPolicy{
+                                MinLength:      10,
+                                RequireUpper:   true,
+                                RequireLower:   true,
+                                RequireNumbers: true,
+                                RequireSpecial: true,
+                                MaxAge:         60,
+                        },
+                }</span>
+        case "enterprise":<span class="cov0" title="0">
+                tenant.MaxUsers = 10000
+                tenant.Settings = models.TenantSettings{
+                        AllowedOrigins:   []string{fmt.Sprintf("https://%s", tenant.Domain)},
+                        CustomBranding:   true,
+                        EnableOAuth:      true,
+                        EnableMFA:        true,
+                        SessionTimeout:   120,
+                        MaxLoginAttempts: 15,
+                        EnableAuditLog:   true,
+                        PasswordPolicy: models.PasswordPolicy{
+                                MinLength:      12,
+                                RequireUpper:   true,
+                                RequireLower:   true,
+                                RequireNumbers: true,
+                                RequireSpecial: true,
+                                MaxAge:         30,
+                        },
+                }</span>
+        default:<span class="cov0" title="0">
+                // Default to basic plan
+                tenant.Plan = "basic"
+                s.setDefaultSettings(tenant)</span>
+        }
+}
+
+// AuthenticateTenant authenticates a tenant using client credentials
+func (s *tenantService) AuthenticateTenant(ctx context.Context, req *models.TenantAuthRequest) (*models.TenantAuthResponse, error) <span class="cov0" title="0">{
+        if req.GrantType != "client_credentials" </span><span class="cov0" title="0">{
+                return nil, errors.New("unsupported grant type")
+        }</span>
+
+        // Find tenant by client ID
+        <span class="cov0" title="0">tenant, err := s.GetTenantByClientID(ctx, req.ClientID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid client credentials: %w", err)
+        }</span>
+
+        // Validate client secret
+        <span class="cov0" title="0">if tenant.ClientSecret != req.ClientSecret </span><span class="cov0" title="0">{
+                return nil, errors.New("invalid client credentials")
+        }</span>
+
+        // Validate tenant access
+        <span class="cov0" title="0">if err := s.ValidateTenantAccess(ctx, tenant.ID); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("tenant access denied: %w", err)
+        }</span>
+
+        // Generate tenant token
+        <span class="cov0" title="0">accessToken, err := s.generateTenantToken(tenant)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to generate token: %w", err)
+        }</span>
+
+        // Generate refresh token
+        <span class="cov0" title="0">refreshToken, err := s.generateRefreshToken(tenant.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return &amp;models.TenantAuthResponse{
+                AccessToken:  accessToken,
+                TokenType:    "Bearer",
+                ExpiresIn:    3600, // 1 hour
+                RefreshToken: refreshToken,
+                Scope:        "tenant:read tenant:write user:read user:write",
+                TenantID:     tenant.ID,
+                TenantName:   tenant.Name,
+                Plan:         tenant.Plan,
+        }, nil</span>
+}
+
+// ValidateTenantToken validates a tenant token
+func (s *tenantService) ValidateTenantToken(ctx context.Context, tokenString string) (*models.TenantToken, error) <span class="cov0" title="0">{
+        // Parse and validate JWT token
+        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) </span><span class="cov0" title="0">{
+                // Validate signing method
+                if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+                }</span>
+                <span class="cov0" title="0">return []byte("tenant-secret-key"), nil</span> // TODO: Use proper secret from config
+        })
+
+        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid token: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if !token.Valid </span><span class="cov0" title="0">{
+                return nil, errors.New("invalid token")
+        }</span>
+
+        // Extract claims
+        <span class="cov0" title="0">claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, errors.New("invalid token claims")
+        }</span>
+
+        // Validate token type
+        <span class="cov0" title="0">if claims["type"] != "tenant" </span><span class="cov0" title="0">{
+                return nil, errors.New("invalid token type")
+        }</span>
+
+        // Check expiration
+        <span class="cov0" title="0">if exp, ok := claims["exp"].(float64); ok </span><span class="cov0" title="0">{
+                if time.Now().Unix() &gt; int64(exp) </span><span class="cov0" title="0">{
+                        return nil, errors.New("token expired")
+                }</span>
+        }
+
+        <span class="cov0" title="0">tenantID, ok := claims["tenant_id"].(string)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, errors.New("invalid tenant ID in token")
+        }</span>
+
+        // Validate tenant still exists and is active
+        <span class="cov0" title="0">if err := s.ValidateTenantAccess(ctx, tenantID); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("tenant access denied: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return &amp;models.TenantToken{
+                TenantID:  tenantID,
+                Token:     tokenString,
+                TokenType: "Bearer",
+                ExpiresAt: time.Unix(int64(claims["exp"].(float64)), 0),
+                Scope:     claims["scope"].(string),
+                CreatedAt: time.Unix(int64(claims["iat"].(float64)), 0),
+        }, nil</span>
+}
+
+// RefreshTenantToken refreshes a tenant token
+func (s *tenantService) RefreshTenantToken(ctx context.Context, refreshToken string) (*models.TenantAuthResponse, error) <span class="cov0" title="0">{
+        // TODO: Implement refresh token validation
+        // For now, we'll generate a new token
+
+        // Extract tenant ID from refresh token (in real implementation, validate against stored refresh tokens)
+        // This is a simplified implementation
+        tenantID := "tenant-1234567890" // TODO: Extract from refresh token
+
+        tenant, err := s.GetTenant(ctx, tenantID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("tenant not found: %w", err)
+        }</span>
+
+        // Validate tenant access
+        <span class="cov0" title="0">if err := s.ValidateTenantAccess(ctx, tenant.ID); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("tenant access denied: %w", err)
+        }</span>
+
+        // Generate new access token
+        <span class="cov0" title="0">accessToken, err := s.generateTenantToken(tenant)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to generate token: %w", err)
+        }</span>
+
+        // Generate new refresh token
+        <span class="cov0" title="0">newRefreshToken, err := s.generateRefreshToken(tenant.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return &amp;models.TenantAuthResponse{
+                AccessToken:  accessToken,
+                TokenType:    "Bearer",
+                ExpiresIn:    3600, // 1 hour
+                RefreshToken: newRefreshToken,
+                Scope:        "tenant:read tenant:write user:read user:write",
+                TenantID:     tenant.ID,
+                TenantName:   tenant.Name,
+                Plan:         tenant.Plan,
+        }, nil</span>
+}
+
+// RevokeTenantToken revokes a tenant token
+func (s *tenantService) RevokeTenantToken(ctx context.Context, token string) error <span class="cov0" title="0">{
+        // TODO: Implement token revocation (add to blacklist)
+        // For now, just validate the token
+        _, err := s.ValidateTenantToken(ctx, token)
+        return err
+}</span>
+
+// GetTenantByClientID retrieves a tenant by client ID
+func (s *tenantService) GetTenantByClientID(ctx context.Context, clientID string) (*models.Tenant, error) <span class="cov0" title="0">{
+        if clientID == "" </span><span class="cov0" title="0">{
+                return nil, errors.New("client ID is required")
+        }</span>
+
+        // TODO: Get from database
+        // return s.repo.GetTenantByClientID(ctx, clientID)
+
+        // Mock implementation
+        <span class="cov0" title="0">if clientID == "client-1234567890" </span><span class="cov0" title="0">{
+                return &amp;models.Tenant{
+                        ID:           "tenant-1234567890",
+                        Name:         "Acme Corp",
+                        Domain:       "acme.com",
+                        Status:       "active",
+                        Plan:         "pro",
+                        MaxUsers:     1000,
+                        ClientID:     "client-1234567890",
+                        ClientSecret: "secret-1234567890",
+                        Settings: models.TenantSettings{
+                                AllowedOrigins: []string{"https://acme.com"},
+                                EnableOAuth:    true,
+                                EnableMFA:      true,
+                                SessionTimeout: 60,
+                        },
+                        CreatedAt: time.Now(),
+                        UpdatedAt: time.Now(),
+                }, nil
+        }</span>
+
+        <span class="cov0" title="0">return nil, errors.New("tenant not found")</span>
+}
+
+// generateTenantToken generates a JWT token for tenant authentication
+func (s *tenantService) generateTenantToken(tenant *models.Tenant) (string, error) <span class="cov0" title="0">{
+        claims := jwt.MapClaims{
+                "tenant_id": tenant.ID,
+                "type":      "tenant",
+                "scope":     "tenant:read tenant:write user:read user:write",
+                "iat":       time.Now().Unix(),
+                "exp":       time.Now().Add(time.Hour).Unix(),
+        }
+
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+        return token.SignedString([]byte("tenant-secret-key")) // TODO: Use proper secret from config
+}</span>
+
+// generateRefreshToken generates a refresh token
+func (s *tenantService) generateRefreshToken(tenantID string) (string, error) <span class="cov0" title="0">{
+        // Generate a random refresh token
+        bytes := make([]byte, 32)
+        if _, err := rand.Read(bytes); err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+        <span class="cov0" title="0">return hex.EncodeToString(bytes), nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file24" style="display: none">package tracing
 
 import (
         "context"

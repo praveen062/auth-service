@@ -4,6 +4,7 @@ import (
 	"auth-service/internal/config"
 	"auth-service/internal/logger"
 	"auth-service/internal/middleware"
+	"auth-service/internal/models"
 	"net/http"
 	"time"
 
@@ -36,7 +37,7 @@ func NewAuthHandler(cfg *config.Config) *AuthHandler {
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email" example:"user@example.com"`
 	Password string `json:"password" binding:"required" example:"password123"`
-	TenantID string `json:"tenant_id" binding:"required" example:"tenant-123"`
+	TenantID string `json:"tenant_id" example:"tenant-123"` // Optional, can be extracted from context
 }
 
 // LoginResponse represents the login response body
@@ -64,7 +65,7 @@ type Role struct {
 
 // Login godoc
 // @Summary User login
-// @Description Authenticate a user with email and password
+// @Description Authenticate a user with email and password within a tenant
 // @Tags Authentication
 // @Accept json
 // @Produce json
@@ -72,6 +73,7 @@ type Role struct {
 // @Success 200 {object} LoginResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -97,7 +99,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		reqLogger.AuthFailure("", req.TenantID, "password", "validation_error")
+		reqLogger.AuthFailure("", "", "password", "validation_error")
 		reqLogger.Error("Login validation failed", zap.Error(err))
 
 		c.JSON(http.StatusBadRequest, ErrorResponse{
@@ -107,9 +109,47 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Get tenant information from context (set by middleware)
+	tenantInterface := middleware.GetTenant(c)
+	if tenantInterface == nil {
+		reqLogger.Error("Tenant context missing")
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "tenant_context_missing",
+			Message: "Tenant context is missing",
+		})
+		return
+	}
+
+	tenant, ok := tenantInterface.(*models.Tenant)
+	if !ok {
+		reqLogger.Error("Invalid tenant type in context")
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "invalid_tenant_type",
+			Message: "Invalid tenant type in context",
+		})
+		return
+	}
+
+	// Use tenant ID from context if not provided in request
+	tenantID := req.TenantID
+	if tenantID == "" {
+		tenantID = tenant.ID
+	}
+
+	// Verify tenant ID matches
+	if tenantID != tenant.ID {
+		reqLogger.AuthFailure(req.Email, tenantID, "password", "tenant_mismatch")
+		c.JSON(http.StatusForbidden, ErrorResponse{
+			Error:   "tenant_mismatch",
+			Message: "Tenant ID in request does not match authenticated tenant",
+		})
+		return
+	}
+
 	reqLogger.Info("Login validation passed",
 		zap.String("email", req.Email),
-		zap.String("tenant_id", req.TenantID),
+		zap.String("tenant_id", tenantID),
+		zap.String("tenant_name", tenant.Name),
 	)
 
 	// TODO: Implement actual authentication logic
@@ -119,13 +159,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	dbStart := time.Now()
 	// Mock database query
 	time.Sleep(10 * time.Millisecond) // Simulate DB latency
-	reqLogger.DatabaseOperation("SELECT", "users", req.TenantID, time.Since(dbStart), nil)
+	reqLogger.DatabaseOperation("SELECT", "users", tenantID, time.Since(dbStart), nil)
 
 	// Simulate cache operation
 	cacheStart := time.Now()
 	// Mock cache check
 	time.Sleep(5 * time.Millisecond) // Simulate cache latency
-	reqLogger.CacheOperation("GET", "user_session:"+req.Email, req.TenantID, false, time.Since(cacheStart), nil)
+	reqLogger.CacheOperation("GET", "user_session:"+req.Email, tenantID, false, time.Since(cacheStart), nil)
 
 	response := LoginResponse{
 		AccessToken:  "mock-access-token",
@@ -135,7 +175,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		User: User{
 			ID:       "user-123",
 			Email:    req.Email,
-			TenantID: req.TenantID,
+			TenantID: tenantID,
 			Roles: []Role{
 				{ID: "role-1", Name: "user"},
 			},
@@ -143,11 +183,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Log successful authentication
-	reqLogger.AuthSuccess("user-123", req.TenantID, "password")
-	reqLogger.BusinessEvent("user_login", "user-123", req.TenantID, map[string]interface{}{
+	reqLogger.AuthSuccess("user-123", tenantID, "password")
+	reqLogger.BusinessEvent("user_login", "user-123", tenantID, map[string]interface{}{
 		"login_method": "password",
 		"roles":        []string{"user"},
 		"duration_ms":  time.Since(start).Milliseconds(),
+		"tenant_name":  tenant.Name,
+		"tenant_plan":  tenant.Plan,
 	})
 
 	c.JSON(http.StatusOK, response)

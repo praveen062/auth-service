@@ -139,4 +139,39 @@ actuator:
     sensitive_endpoints_restricted: true
     allowed_ips:
       - "127.0.0.1"
-      - "::1" 
+      - "::1"
+
+# Services Configuration
+services:
+  notification_service:
+    base_url: "http://notification-service:8080"
+    timeout: 10s
+    max_retries: 3
+    retry_delay: 1s
+    circuit_breaker:
+      max_failures: 5
+      timeout: 30s
+      interval: 60s
+      ready_to_trip: "consecutive"
+      on_state_change: true
+  
+  subscription_service:
+    base_url: "http://subscription-service:8080"
+    timeout: 5s
+    max_retries: 3
+    retry_delay: 1s
+    circuit_breaker:
+      max_failures: 3
+      timeout: 30s
+      interval: 60s
+      ready_to_trip: "consecutive"
+      on_state_change: true
+
+# OTP Configuration
+otp:
+  default_digit_length: 6
+  min_digit_length: 4
+  max_digit_length: 10
+  default_expiration_minutes: 5
+  max_attempts: 3
+  rate_limit_per_hour: 10 

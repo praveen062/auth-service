@@ -20,6 +20,8 @@ type Config struct {
 	Tenancy  TenancyConfig  `mapstructure:"tenancy"`
 	OneTime  OneTimeConfig  `mapstructure:"one_time_auth"`
 	Actuator ActuatorConfig `mapstructure:"actuator"`
+	Services ServiceConfig  `mapstructure:"services"`
+	OTP      OTPConfig      `mapstructure:"otp"`
 }
 
 // ServerConfig holds server configuration
@@ -155,12 +157,20 @@ type OneTimeConfig struct {
 
 // ActuatorConfig holds actuator configuration
 type ActuatorConfig struct {
-	Enabled          bool                   `mapstructure:"enabled"`
-	BasePath         string                 `mapstructure:"base_path"`
-	Health           HealthConfig           `mapstructure:"health"`
-	Metrics          MetricsConfig          `mapstructure:"metrics"`
-	Endpoints        EndpointsConfig        `mapstructure:"endpoints"`
-	ActuatorSecurity ActuatorSecurityConfig `mapstructure:"security"`
+	Enabled   bool                   `mapstructure:"enabled"`
+	BasePath  string                 `mapstructure:"base_path"`
+	Health    HealthConfig           `mapstructure:"health"`
+	Metrics   MetricsConfig          `mapstructure:"metrics"`
+	Endpoints EndpointsConfig        `mapstructure:"endpoints"`
+	Security  ActuatorSecurityConfig `mapstructure:"security"`
+}
+
+// ActuatorSecurityConfig holds actuator security configuration
+type ActuatorSecurityConfig struct {
+	HealthPublic                 bool     `mapstructure:"health_public"`
+	MetricsPublic                bool     `mapstructure:"metrics_public"`
+	SensitiveEndpointsRestricted bool     `mapstructure:"sensitive_endpoints_restricted"`
+	AllowedIPs                   []string `mapstructure:"allowed_ips"`
 }
 
 // HealthConfig holds health check configuration
@@ -194,12 +204,14 @@ type EndpointsConfig struct {
 	Loggers     bool `mapstructure:"loggers"`
 }
 
-// ActuatorSecurityConfig holds actuator security configuration
-type ActuatorSecurityConfig struct {
-	HealthPublic                 bool     `mapstructure:"health_public"`
-	MetricsPublic                bool     `mapstructure:"metrics_public"`
-	SensitiveEndpointsRestricted bool     `mapstructure:"sensitive_endpoints_restricted"`
-	AllowedIPs                   []string `mapstructure:"allowed_ips"`
+// OTPConfig holds OTP configuration
+type OTPConfig struct {
+	DefaultDigitLength       int `yaml:"default_digit_length" json:"default_digit_length"`
+	MinDigitLength           int `yaml:"min_digit_length" json:"min_digit_length"`
+	MaxDigitLength           int `yaml:"max_digit_length" json:"max_digit_length"`
+	DefaultExpirationMinutes int `yaml:"default_expiration_minutes" json:"default_expiration_minutes"`
+	MaxAttempts              int `yaml:"max_attempts" json:"max_attempts"`
+	RateLimitPerHour         int `yaml:"rate_limit_per_hour" json:"rate_limit_per_hour"`
 }
 
 // LoadConfig loads configuration from file and environment variables

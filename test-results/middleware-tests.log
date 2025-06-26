@@ -19,4 +19,4 @@
 === RUN   TestRBACMiddleware_DifferentTenants
 --- PASS: TestRBACMiddleware_DifferentTenants (0.00s)
 PASS
-ok  	auth-service/internal/middleware	(cached)
+ok  	auth-service/internal/middleware	0.313s

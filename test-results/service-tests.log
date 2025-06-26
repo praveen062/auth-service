@@ -1,3 +1,87 @@
+=== RUN   TestTenantBasedOTPDigitLength
+=== RUN   TestTenantBasedOTPDigitLength/Basic_tenant_should_have_4-digit_OTP
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 1066 to test@example.com (tenant: tenant-basic)
+=== RUN   TestTenantBasedOTPDigitLength/Pro_tenant_should_have_6-digit_OTP
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 100232 to test@example.com (tenant: tenant-pro)
+=== RUN   TestTenantBasedOTPDigitLength/Enterprise_tenant_should_have_8-digit_OTP
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 10000044 to test@example.com (tenant: tenant-enterprise)
+=== RUN   TestTenantBasedOTPDigitLength/Unknown_tenant_should_default_to_6-digit_OTP
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 100237 to test@example.com (tenant: unknown-tenant)
+--- PASS: TestTenantBasedOTPDigitLength (0.00s)
+    --- PASS: TestTenantBasedOTPDigitLength/Basic_tenant_should_have_4-digit_OTP (0.00s)
+    --- PASS: TestTenantBasedOTPDigitLength/Pro_tenant_should_have_6-digit_OTP (0.00s)
+    --- PASS: TestTenantBasedOTPDigitLength/Enterprise_tenant_should_have_8-digit_OTP (0.00s)
+    --- PASS: TestTenantBasedOTPDigitLength/Unknown_tenant_should_default_to_6-digit_OTP (0.00s)
+=== RUN   TestOTPDigitLengthValidation
+=== RUN   TestOTPDigitLengthValidation/Invalid_length_0
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 100124 to test@example.com (tenant: test-tenant)
+    otp_service_test.go:102: Expected error for invalid digit length 0, but got none
+=== RUN   TestOTPDigitLengthValidation/Invalid_length_1
+=== RUN   TestOTPDigitLengthValidation/Invalid_length_2
+=== RUN   TestOTPDigitLengthValidation/Invalid_length_3
+=== RUN   TestOTPDigitLengthValidation/Invalid_length_11
+=== RUN   TestOTPDigitLengthValidation/Invalid_length_15
+=== RUN   TestOTPDigitLengthValidation/Valid_length_4
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 1148 to test@example.com (tenant: test-tenant)
+=== RUN   TestOTPDigitLengthValidation/Valid_length_6
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 100208 to test@example.com (tenant: test-tenant)
+=== RUN   TestOTPDigitLengthValidation/Valid_length_8
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 10000218 to test@example.com (tenant: test-tenant)
+=== RUN   TestOTPDigitLengthValidation/Valid_length_10
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 1000000181 to test@example.com (tenant: test-tenant)
+--- FAIL: TestOTPDigitLengthValidation (0.00s)
+    --- FAIL: TestOTPDigitLengthValidation/Invalid_length_0 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Invalid_length_1 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Invalid_length_2 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Invalid_length_3 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Invalid_length_11 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Invalid_length_15 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Valid_length_4 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Valid_length_6 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Valid_length_8 (0.00s)
+    --- PASS: TestOTPDigitLengthValidation/Valid_length_10 (0.00s)
+=== RUN   TestOTPGenerationWithDifferentLengths
+=== RUN   TestOTPGenerationWithDifferentLengths/Length_4
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 1183 to test@example.com (tenant: test-tenant)
+=== RUN   TestOTPGenerationWithDifferentLengths/Length_6
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 100242 to test@example.com (tenant: test-tenant)
+=== RUN   TestOTPGenerationWithDifferentLengths/Length_8
+2025/06/26 01:18:56 [OTP-EMAIL] Sent OTP 10000124 to test@example.com (tenant: test-tenant)
+--- PASS: TestOTPGenerationWithDifferentLengths (0.00s)
+    --- PASS: TestOTPGenerationWithDifferentLengths/Length_4 (0.00s)
+    --- PASS: TestOTPGenerationWithDifferentLengths/Length_6 (0.00s)
+    --- PASS: TestOTPGenerationWithDifferentLengths/Length_8 (0.00s)
+=== RUN   TestTriggerTwoFactorAuth
+=== RUN   TestTriggerTwoFactorAuth/Successful_2FA_trigger
+2025/06/26 01:18:56 [2FA] Triggered EMAIL 2FA for user user-123 (client: tenant-pro, message_id: test-message-id)
+=== RUN   TestTriggerTwoFactorAuth/Invalid_subscription
+=== RUN   TestTriggerTwoFactorAuth/Feature_disabled
+=== RUN   TestTriggerTwoFactorAuth/Quota_exceeded
+=== RUN   TestTriggerTwoFactorAuth/Invalid_channel
+=== RUN   TestTriggerTwoFactorAuth/Subscription_service_error
+=== RUN   TestTriggerTwoFactorAuth/Notification_service_error
+=== RUN   TestTriggerTwoFactorAuth/Different_tenant_configurations
+=== RUN   TestTriggerTwoFactorAuth/Different_tenant_configurations/Tenant_tenant-basic
+2025/06/26 01:18:56 [2FA] Triggered EMAIL 2FA for user user-123 (client: tenant-basic, message_id: test-message-id)
+=== RUN   TestTriggerTwoFactorAuth/Different_tenant_configurations/Tenant_tenant-pro
+2025/06/26 01:18:56 [2FA] Triggered EMAIL 2FA for user user-123 (client: tenant-pro, message_id: test-message-id)
+=== RUN   TestTriggerTwoFactorAuth/Different_tenant_configurations/Tenant_tenant-enterprise
+2025/06/26 01:18:56 [2FA] Triggered EMAIL 2FA for user user-123 (client: tenant-enterprise, message_id: test-message-id)
+=== RUN   TestTriggerTwoFactorAuth/Different_tenant_configurations/Tenant_unknown-tenant
+2025/06/26 01:18:56 [2FA] Triggered EMAIL 2FA for user user-123 (client: unknown-tenant, message_id: test-message-id)
+--- PASS: TestTriggerTwoFactorAuth (0.00s)
+    --- PASS: TestTriggerTwoFactorAuth/Successful_2FA_trigger (0.00s)
+    --- PASS: TestTriggerTwoFactorAuth/Invalid_subscription (0.00s)
+    --- PASS: TestTriggerTwoFactorAuth/Feature_disabled (0.00s)
+    --- PASS: TestTriggerTwoFactorAuth/Quota_exceeded (0.00s)
+    --- PASS: TestTriggerTwoFactorAuth/Invalid_channel (0.00s)
+    --- PASS: TestTriggerTwoFactorAuth/Subscription_service_error (0.00s)
+    --- PASS: TestTriggerTwoFactorAuth/Notification_service_error (0.00s)
+    --- PASS: TestTriggerTwoFactorAuth/Different_tenant_configurations (0.00s)
+        --- PASS: TestTriggerTwoFactorAuth/Different_tenant_configurations/Tenant_tenant-basic (0.00s)
+        --- PASS: TestTriggerTwoFactorAuth/Different_tenant_configurations/Tenant_tenant-pro (0.00s)
+        --- PASS: TestTriggerTwoFactorAuth/Different_tenant_configurations/Tenant_tenant-enterprise (0.00s)
+        --- PASS: TestTriggerTwoFactorAuth/Different_tenant_configurations/Tenant_unknown-tenant (0.00s)
 === RUN   TestRBACService_AssignRoleToUser_Success
 --- PASS: TestRBACService_AssignRoleToUser_Success (0.00s)
 === RUN   TestRBACService_AssignRoleToUser_Error
@@ -34,5 +118,6 @@
 --- PASS: TestRBACService_Integration_UserRoleAssignment (0.00s)
 === RUN   TestRBACService_Integration_ServiceRoleAssignment
 --- PASS: TestRBACService_Integration_ServiceRoleAssignment (0.00s)
-PASS
-ok  	auth-service/internal/service	(cached)
+FAIL
+FAIL	auth-service/internal/service	0.257s
+FAIL

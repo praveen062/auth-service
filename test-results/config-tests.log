@@ -35,4 +35,4 @@
 === RUN   TestConfig_DefaultValues_Comprehensive
 --- PASS: TestConfig_DefaultValues_Comprehensive (0.00s)
 PASS
-ok  	auth-service/internal/config	(cached)
+ok  	auth-service/internal/config	0.291s
