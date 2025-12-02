@@ -1,0 +1,99 @@
+=== RUN   TestMain_LoadConfig_Success
+--- PASS: TestMain_LoadConfig_Success (0.00s)
+=== RUN   TestMain_LoadConfig_FileNotFound
+--- PASS: TestMain_LoadConfig_FileNotFound (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_AllowedIP
+--- PASS: TestMain_IPAllowlistMiddleware_AllowedIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_BlockedIP
+--- PASS: TestMain_IPAllowlistMiddleware_BlockedIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_IPv6Allowed
+--- PASS: TestMain_IPAllowlistMiddleware_IPv6Allowed (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_EmptyAllowedIPs
+--- PASS: TestMain_IPAllowlistMiddleware_EmptyAllowedIPs (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_ProxyHeaders
+--- PASS: TestMain_IPAllowlistMiddleware_ProxyHeaders (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_RealIPHeader
+--- PASS: TestMain_IPAllowlistMiddleware_RealIPHeader (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_MultipleForwardedIPs
+--- PASS: TestMain_IPAllowlistMiddleware_MultipleForwardedIPs (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_InvalidIP
+--- PASS: TestMain_IPAllowlistMiddleware_InvalidIP (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_SubnetMatching
+--- PASS: TestMain_IPAllowlistMiddleware_SubnetMatching (0.00s)
+=== RUN   TestMain_IPAllowlistMiddleware_SubnetBlocked
+--- PASS: TestMain_IPAllowlistMiddleware_SubnetBlocked (0.00s)
+=== RUN   TestMain_ConfigurationValidation
+--- PASS: TestMain_ConfigurationValidation (0.00s)
+=== RUN   TestMain_DatabaseDSN_Generation
+--- PASS: TestMain_DatabaseDSN_Generation (0.00s)
+=== RUN   TestMain_RedisAddr_Generation
+--- PASS: TestMain_RedisAddr_Generation (0.00s)
+=== RUN   TestMain_EnvironmentVariableOverride
+--- PASS: TestMain_EnvironmentVariableOverride (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIP
+--- PASS: TestIPAllowlistMiddleware_AllowedIP (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIPWithPort
+--- PASS: TestIPAllowlistMiddleware_AllowedIPWithPort (0.00s)
+=== RUN   TestIPAllowlistMiddleware_AllowedIPSubnet
+--- PASS: TestIPAllowlistMiddleware_AllowedIPSubnet (0.00s)
+=== RUN   TestIPAllowlistMiddleware_DisallowedIP
+--- PASS: TestIPAllowlistMiddleware_DisallowedIP (0.00s)
+=== RUN   TestIPAllowlistMiddleware_EmptyAllowedIPs
+--- PASS: TestIPAllowlistMiddleware_EmptyAllowedIPs (0.00s)
+=== RUN   TestIPAllowlistMiddleware_NoRemoteAddr
+--- PASS: TestIPAllowlistMiddleware_NoRemoteAddr (0.00s)
+=== RUN   TestIPAllowlistMiddleware_IPv6Allowed
+--- PASS: TestIPAllowlistMiddleware_IPv6Allowed (0.00s)
+=== RUN   TestIPAllowlistMiddleware_IPv6Disallowed
+--- PASS: TestIPAllowlistMiddleware_IPv6Disallowed (0.00s)
+=== RUN   TestIPAllowlistMiddleware_MultipleAllowedIPs
+--- PASS: TestIPAllowlistMiddleware_MultipleAllowedIPs (0.00s)
+=== RUN   TestIPAllowlistMiddleware_InvalidIPFormat
+--- PASS: TestIPAllowlistMiddleware_InvalidIPFormat (0.00s)
+=== RUN   TestIPAllowlistMiddleware_EmptyRemoteAddr
+--- PASS: TestIPAllowlistMiddleware_EmptyRemoteAddr (0.00s)
+=== RUN   TestIPAllowlistMiddleware_Integration
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv4
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv4_Subnet
+=== RUN   TestIPAllowlistMiddleware_Integration/Allowed_IPv6
+=== RUN   TestIPAllowlistMiddleware_Integration/Disallowed_IPv4
+=== RUN   TestIPAllowlistMiddleware_Integration/Disallowed_IPv6
+=== RUN   TestIPAllowlistMiddleware_Integration/Empty_Remote_Addr
+=== RUN   TestIPAllowlistMiddleware_Integration/Invalid_Format
+--- PASS: TestIPAllowlistMiddleware_Integration (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv4 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv4_Subnet (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Allowed_IPv6 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Disallowed_IPv4 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Disallowed_IPv6 (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Empty_Remote_Addr (0.00s)
+    --- PASS: TestIPAllowlistMiddleware_Integration/Invalid_Format (0.00s)
+=== RUN   TestMain_HandlerSetup
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.107+0530","caller":"rest/auth_handler.go:95","message":"Login attempt started","request_id":"f8e746b28a1a114f4185eac3f6737da9","trace_id":"f8e746b28a1a114f4185eac3f6737da9","span_id":"73c076d41409a6a6","method":"POST","path":"/api/v1/auth/login","client_ip":"","endpoint":"/auth/login","method":"POST"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.107+0530","caller":"rest/auth_handler.go:149","message":"Login validation passed","request_id":"f8e746b28a1a114f4185eac3f6737da9","trace_id":"f8e746b28a1a114f4185eac3f6737da9","span_id":"73c076d41409a6a6","method":"POST","path":"/api/v1/auth/login","client_ip":"","email":"test@example.com","tenant_id":"test-tenant","tenant_name":"Test Tenant"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.124+0530","caller":"logger/logger.go:186","message":"Authentication successful","request_id":"f8e746b28a1a114f4185eac3f6737da9","trace_id":"f8e746b28a1a114f4185eac3f6737da9","span_id":"73c076d41409a6a6","method":"POST","path":"/api/v1/auth/login","client_ip":"","request_id":"f8e746b28a1a114f4185eac3f6737da9","trace_id":"f8e746b28a1a114f4185eac3f6737da9","span_id":"73c076d41409a6a6","user_id":"user-123","tenant_id":"test-tenant","auth_method":"password","client_ip":""}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.124+0530","caller":"rest/auth_handler.go:187","message":"Business event","request_id":"f8e746b28a1a114f4185eac3f6737da9","trace_id":"f8e746b28a1a114f4185eac3f6737da9","span_id":"73c076d41409a6a6","event_type":"user_login","user_id":"user-123","tenant_id":"test-tenant","client_ip":"","login_method":"password","roles":["user"],"duration_ms":17,"tenant_name":"Test Tenant","tenant_plan":"pro"}
+--- PASS: TestMain_HandlerSetup (0.02s)
+=== RUN   TestMain_ServerSetup
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.125+0530","caller":"server/main_test.go:1011","message":"Health check registered","name":"memory"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.125+0530","caller":"server/main_test.go:1012","message":"Health check registered","name":"goroutines"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.125+0530","caller":"server/main_test.go:1013","message":"Health check registered","name":"disk"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.125+0530","caller":"server/main_test.go:1021","message":"Actuator routes registered","base_path":"/actuator"}
+--- PASS: TestMain_ServerSetup (0.00s)
+=== RUN   TestMain_ActuatorSetup
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.125+0530","caller":"server/main_test.go:1084","message":"Health check registered","name":"memory"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.125+0530","caller":"server/main_test.go:1085","message":"Health check registered","name":"goroutines"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.125+0530","caller":"server/main_test.go:1086","message":"Health check registered","name":"disk"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.125+0530","caller":"server/main_test.go:1094","message":"Actuator routes registered","base_path":"/actuator"}
+{"level":"INFO","timestamp":"2025-06-26T12:51:16.126+0530","caller":"actuator/actuator.go:194","message":"Application info request received","request_id":"2d706134e52aba21477d86894708b08d","trace_id":"2d706134e52aba21477d86894708b08d","span_id":"fcda360fb187f17d","method":"GET","path":"/actuator/info","client_ip":""}
+--- PASS: TestMain_ActuatorSetup (0.00s)
+=== RUN   TestMain_SwaggerSetup
+--- PASS: TestMain_SwaggerSetup (0.00s)
+=== RUN   TestMain_ErrorHandling
+--- PASS: TestMain_ErrorHandling (0.00s)
+=== RUN   TestMain_AddressGeneration
+--- PASS: TestMain_AddressGeneration (0.00s)
+=== RUN   TestMain_PrintfStatements
+--- PASS: TestMain_PrintfStatements (0.00s)
+PASS
+ok  	auth-service/cmd/server	(cached)

@@ -1,0 +1,617 @@
+basePath: /api/v1
+definitions:
+  rest.ClientCredentialsRequest:
+    properties:
+      client_id:
+        example: service-client-123
+        type: string
+      client_secret:
+        example: service-secret-456
+        type: string
+      grant_type:
+        example: client_credentials
+        type: string
+      scope:
+        example: read:users write:users
+        type: string
+    required:
+    - client_id
+    - client_secret
+    - grant_type
+    type: object
+  rest.ClientCredentialsResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 3600
+        type: integer
+      scope:
+        example: read:users write:users
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+    type: object
+  rest.ErrorResponse:
+    properties:
+      error:
+        example: validation_error
+        type: string
+      message:
+        example: Invalid request data
+        type: string
+    type: object
+  rest.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+      tenant_id:
+        example: tenant-123
+        type: string
+    required:
+    - email
+    - password
+    - tenant_id
+    type: object
+  rest.LoginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 3600
+        type: integer
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+      user:
+        $ref: '#/definitions/rest.User'
+    type: object
+  rest.OneTimeSessionResponse:
+    properties:
+      is_valid:
+        example: true
+        type: boolean
+      message:
+        example: Token validated successfully
+        type: string
+      page_id:
+        example: survey-submit-page
+        type: string
+      session_id:
+        example: survey-session-456
+        type: string
+      token:
+        example: one-time-token-123
+        type: string
+      user:
+        $ref: '#/definitions/rest.User'
+    type: object
+  rest.OneTimeTokenRequest:
+    properties:
+      expires_in:
+        example: 3600
+        type: integer
+      max_uses:
+        example: 1
+        type: integer
+      page_id:
+        description: Specific page/action identifier
+        example: survey-submit-page
+        type: string
+      session_id:
+        description: Unique session identifier
+        example: survey-session-456
+        type: string
+      url:
+        example: https://app.example.com/survey/123
+        type: string
+    required:
+    - url
+    type: object
+  rest.OneTimeTokenResponse:
+    properties:
+      expires_in:
+        example: 3600
+        type: integer
+      max_uses:
+        example: 1
+        type: integer
+      page_id:
+        example: survey-submit-page
+        type: string
+      session_id:
+        example: survey-session-456
+        type: string
+      token:
+        example: one-time-token-123
+        type: string
+      url:
+        example: https://app.example.com/survey/123?token=one-time-token-123&session=survey-session-456&page=survey-submit-page
+        type: string
+    type: object
+  rest.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    required:
+    - refresh_token
+    type: object
+  rest.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      first_name:
+        example: John
+        type: string
+      last_name:
+        example: Doe
+        type: string
+      password:
+        example: password123
+        type: string
+      tenant_id:
+        example: tenant-123
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - tenant_id
+    type: object
+  rest.Role:
+    properties:
+      id:
+        example: role-123
+        type: string
+      name:
+        example: admin
+        type: string
+    type: object
+  rest.SuccessResponse:
+    properties:
+      message:
+        example: Operation completed successfully
+        type: string
+    type: object
+  rest.User:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: user-123
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/rest.Role'
+        type: array
+      tenant_id:
+        example: tenant-123
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: A comprehensive OAuth 2.0 service with multi-tenancy, Google OAuth,
+    and service-to-service authentication.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Multi-Tenant OAuth Service API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with email and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/rest.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: User login
+      tags:
+      - Authentication
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout a user and invalidate their tokens
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - Authentication
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh an expired access token using a refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/rest.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/rest.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rest.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: User registration
+      tags:
+      - Authentication
+  /oauth/complete:
+    post:
+      consumes:
+      - application/json
+      description: Mark a one-time session as completed (e.g., survey submitted) and
+        invalidate the token
+      parameters:
+      - description: One-time token
+        example: '"one-time-token-123"'
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: Session ID
+        example: '"survey-session-456"'
+        in: query
+        name: session
+        required: true
+        type: string
+      - description: Page ID
+        example: '"survey-submit-page"'
+        in: query
+        name: page
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "410":
+          description: Gone
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Complete one-time session
+      tags:
+      - OAuth
+  /oauth/google/callback:
+    get:
+      consumes:
+      - application/json
+      description: Handle Google OAuth callback and exchange code for tokens
+      parameters:
+      - description: Authorization code from Google
+        example: '"4/0AfJohXn..."'
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: State parameter
+        example: '"tenant-123"'
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: Error from Google OAuth
+        example: '"access_denied"'
+        in: query
+        name: error
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Google OAuth callback
+      tags:
+      - OAuth
+  /oauth/google/login:
+    get:
+      consumes:
+      - application/json
+      description: Redirect user to Google OAuth for authentication
+      parameters:
+      - description: Tenant ID
+        example: '"tenant-123"'
+        in: query
+        name: tenant_id
+        required: true
+        type: string
+      - description: Custom redirect URI
+        example: '"https://app.example.com/callback"'
+        in: query
+        name: redirect_uri
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Redirect to Google OAuth
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Initiate Google OAuth login
+      tags:
+      - OAuth
+  /oauth/one-time:
+    post:
+      consumes:
+      - application/json
+      description: Create a one-time token for secure access to specific URLs with
+        session and page restrictions
+      parameters:
+      - description: One-time token parameters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/rest.OneTimeTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rest.OneTimeTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create one-time authentication token
+      tags:
+      - OAuth
+  /oauth/token:
+    post:
+      consumes:
+      - application/json
+      description: Exchange client credentials for access token (service-to-service
+        authentication)
+      parameters:
+      - description: Client credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/rest.ClientCredentialsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.ClientCredentialsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: OAuth 2.0 Client Credentials Flow
+      tags:
+      - OAuth
+  /oauth/verify:
+    get:
+      consumes:
+      - application/json
+      description: Verify and consume a one-time token with session and page validation
+      parameters:
+      - description: One-time token
+        example: '"one-time-token-123"'
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: Session ID
+        example: '"survey-session-456"'
+        in: query
+        name: session
+        required: true
+        type: string
+      - description: Page ID
+        example: '"survey-submit-page"'
+        in: query
+        name: page
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.OneTimeSessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "410":
+          description: Gone
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Verify one-time authentication token
+      tags:
+      - OAuth
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+  OAuth2ClientCredentials:
+    flow: application
+    scopes:
+      admin: '"Admin access"'
+      read: '"Read access"'
+      write: '"Write access"'
+    tokenUrl: /api/v1/oauth/token
+    type: oauth2
+swagger: "2.0"
+tags:
+- description: Authentication and authorization endpoints
+  name: Authentication
+- description: OAuth 2.0 flow endpoints
+  name: OAuth
+- description: Multi-tenant management endpoints
+  name: Tenants
+- description: Role-based access control endpoints
+  name: RBAC
+- description: Service-to-service authentication endpoints
+  name: Services

@@ -1,0 +1,22 @@
+=== RUN   TestActuatorMiddleware
+--- PASS: TestActuatorMiddleware (0.00s)
+=== RUN   TestHealthCheckMiddleware
+--- PASS: TestHealthCheckMiddleware (0.00s)
+=== RUN   TestRBACMiddleware_UserHasPermission_Success
+--- PASS: TestRBACMiddleware_UserHasPermission_Success (0.00s)
+=== RUN   TestRBACMiddleware_UserDoesNotHavePermission
+--- PASS: TestRBACMiddleware_UserDoesNotHavePermission (0.00s)
+=== RUN   TestRBACMiddleware_MissingUserID
+--- PASS: TestRBACMiddleware_MissingUserID (0.00s)
+=== RUN   TestRBACMiddleware_MissingTenantID
+--- PASS: TestRBACMiddleware_MissingTenantID (0.00s)
+=== RUN   TestRBACMiddleware_RBACServiceError
+--- PASS: TestRBACMiddleware_RBACServiceError (0.00s)
+=== RUN   TestRBACMiddleware_DifferentPermissions
+--- PASS: TestRBACMiddleware_DifferentPermissions (0.00s)
+=== RUN   TestRBACMiddleware_DifferentUsers
+--- PASS: TestRBACMiddleware_DifferentUsers (0.00s)
+=== RUN   TestRBACMiddleware_DifferentTenants
+--- PASS: TestRBACMiddleware_DifferentTenants (0.00s)
+PASS
+ok  	auth-service/internal/middleware	(cached)
